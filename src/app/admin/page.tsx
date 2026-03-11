@@ -1,7 +1,7 @@
 
 "use client"
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { 
   TrendingUp, 
   ShoppingBag, 
@@ -23,74 +23,68 @@ import {
   Area
 } from 'recharts';
 import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, where, limit } from 'firebase/firestore';
-
-const REVENUE_DATA = [
-  { name: 'Mon', revenue: 4000 },
-  { name: 'Tue', revenue: 3000 },
-  { name: 'Wed', revenue: 2000 },
-  { name: 'Thu', revenue: 2780 },
-  { name: 'Fri', revenue: 1890 },
-  { name: 'Sat', revenue: 2390 },
-  { name: 'Sun', revenue: 3490 },
-];
-
-const SALES_DATA = [
-  { name: 'Jan', sales: 400 },
-  { name: 'Feb', sales: 300 },
-  { name: 'Mar', sales: 200 },
-  { name: 'Apr', sales: 278 },
-  { name: 'May', sales: 189 },
-  { name: 'Jun', sales: 239 },
-];
+import { collection } from 'firebase/firestore';
+import { cn } from '@/lib/utils';
 
 export default function AdminDashboardOverview() {
   const db = useFirestore();
   const { user } = useUser();
 
-  // Real-time data fetching for stats - Defer until user is logged in
-  const ordersQuery = useMemoFirebase(() => {
-    if (!user) return null;
-    return collection(db, 'orders');
-  }, [db, user]);
+  // Real-time data fetching for stats
+  const ordersQuery = useMemoFirebase(() => user ? collection(db, 'orders') : null, [db, user]);
   const { data: orders } = useCollection(ordersQuery);
 
-  const usersQuery = useMemoFirebase(() => {
-    if (!user) return null;
-    return collection(db, 'users');
-  }, [db, user]);
+  const usersQuery = useMemoFirebase(() => user ? collection(db, 'users') : null, [db, user]);
   const { data: users } = useCollection(usersQuery);
 
-  const foodsQuery = useMemoFirebase(() => {
-    if (!user) return null;
-    return collection(db, 'foods');
-  }, [db, user]);
-  const { data: foods } = useCollection(foodsQuery);
+  const restaurantsQuery = useMemoFirebase(() => user ? collection(db, 'restaurants') : null, [db, user]);
+  const { data: restaurants } = useCollection(restaurantsQuery);
 
   const totalRevenue = orders?.reduce((acc, order) => acc + (order.totalAmount || 0), 0) || 0;
   const today = new Date().toISOString().split('T')[0];
   const todayOrders = orders?.filter(order => order.orderDate?.startsWith(today)).length || 0;
 
+  // Derive weekly revenue chart data from real orders
+  const weeklyData = useMemo(() => {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const result = days.map(day => ({ name: day, revenue: 0 }));
+    
+    orders?.forEach(order => {
+      const date = new Date(order.orderDate);
+      const dayName = days[date.getDay()];
+      const item = result.find(d => d.name === dayName);
+      if (item) item.revenue += order.totalAmount || 0;
+    });
+    
+    return result;
+  }, [orders]);
+
   const stats = [
     { label: 'Total Revenue', value: `₹${totalRevenue.toLocaleString()}`, icon: TrendingUp, color: 'text-primary', trend: '+12.5%', isUp: true },
     { label: 'Total Orders', value: orders?.length || 0, icon: ShoppingBag, color: 'text-blue-500', trend: '+8.2%', isUp: true },
     { label: 'Total Customers', value: users?.length || 0, icon: Users, color: 'text-green-500', trend: '+5.4%', isUp: true },
-    { label: 'Today\'s Orders', value: todayOrders, icon: ChefHat, color: 'text-accent', trend: '-2.1%', isUp: false },
+    { label: 'Total Restaurants', value: restaurants?.length || 0, icon: ChefHat, color: 'text-accent', trend: 'Live', isUp: true },
   ];
 
   return (
     <div className="space-y-12">
-      <div>
-        <h1 className="text-4xl font-headline font-black mb-2">Dashboard Overview</h1>
-        <p className="text-muted-foreground">Welcome back, Super Admin. Here's what's happening today.</p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-4xl font-headline font-black mb-2">Executive Summary</h1>
+          <p className="text-muted-foreground">Real-time health check for Bhartiya Swad operations.</p>
+        </div>
+        <div className="bg-white px-6 py-3 rounded-2xl shadow-sm flex items-center gap-3">
+          <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
+          <span className="font-bold text-sm">System Live: {today}</span>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, i) => (
-          <Card key={i} className="border-none shadow-sm rounded-3xl overflow-hidden group hover:shadow-md transition-all">
+          <Card key={i} className="border-none shadow-sm rounded-3xl overflow-hidden group hover:shadow-md transition-all bg-white">
             <CardContent className="p-8">
               <div className="flex justify-between items-start mb-4">
-                <div className={cn("p-4 rounded-2xl bg-muted group-hover:scale-110 transition-transform", stat.color)}>
+                <div className={cn("p-4 rounded-2xl bg-muted/50 group-hover:scale-110 transition-transform", stat.color)}>
                   <stat.icon className="w-6 h-6" />
                 </div>
                 <div className={cn(
@@ -101,7 +95,7 @@ export default function AdminDashboardOverview() {
                   {stat.trend}
                 </div>
               </div>
-              <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{stat.label}</p>
+              <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">{stat.label}</p>
               <h3 className="text-3xl font-black mt-1">{stat.value}</h3>
             </CardContent>
           </Card>
@@ -109,13 +103,13 @@ export default function AdminDashboardOverview() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Card className="border-none shadow-sm rounded-3xl p-8">
+        <Card className="border-none shadow-sm rounded-3xl p-8 bg-white">
           <CardHeader className="px-0 pt-0">
-            <CardTitle className="text-xl font-headline font-bold">Weekly Revenue Trend</CardTitle>
+            <CardTitle className="text-xl font-headline font-bold">Daily Revenue Distribution</CardTitle>
           </CardHeader>
           <div className="h-[350px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={REVENUE_DATA}>
+              <AreaChart data={weeklyData}>
                 <defs>
                   <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
@@ -123,10 +117,11 @@ export default function AdminDashboardOverview() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted))" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                <YAxis axisLine={false} tickLine={false} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 700 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
                 <Tooltip 
-                  contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                  contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 700 }}
+                  cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 2 }}
                 />
                 <Area type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={4} fillOpacity={1} fill="url(#colorRev)" />
               </AreaChart>
@@ -134,21 +129,21 @@ export default function AdminDashboardOverview() {
           </div>
         </Card>
 
-        <Card className="border-none shadow-sm rounded-3xl p-8">
+        <Card className="border-none shadow-sm rounded-3xl p-8 bg-white">
           <CardHeader className="px-0 pt-0">
-            <CardTitle className="text-xl font-headline font-bold">Monthly Sales Graph</CardTitle>
+            <CardTitle className="text-xl font-headline font-bold">Item Performance Index</CardTitle>
           </CardHeader>
           <div className="h-[350px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={SALES_DATA}>
+              <BarChart data={weeklyData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted))" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 700 }} />
                 <YAxis axisLine={false} tickLine={false} />
                 <Tooltip 
                   cursor={{ fill: 'hsl(var(--muted)/0.5)', radius: 8 }}
-                  contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                  contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 700 }}
                 />
-                <Bar dataKey="sales" fill="hsl(var(--accent))" radius={[8, 8, 0, 0]} barSize={40} />
+                <Bar dataKey="revenue" fill="hsl(var(--accent))" radius={[8, 8, 0, 0]} barSize={40} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -156,8 +151,4 @@ export default function AdminDashboardOverview() {
       </div>
     </div>
   );
-}
-
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(' ');
 }
