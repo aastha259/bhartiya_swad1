@@ -31,8 +31,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isUserLoading) {
       if (firebaseUser) {
-        // Admin identification based on the specific admin email
-        const isAdmin = firebaseUser.email === 'xyz@admin.com';
+        // Check for hardcoded admin email or a persistent session flag
+        const isAdminSession = typeof window !== 'undefined' && localStorage.getItem('bhartiya_swad_admin') === 'true';
+        const isEmailAdmin = firebaseUser.email === 'xyz@admin.com';
+        const isAdmin = isEmailAdmin || isAdminSession;
+
         setUser({
           uid: firebaseUser.uid,
           email: firebaseUser.email,
@@ -47,6 +50,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [firebaseUser, isUserLoading]);
 
   const logout = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('bhartiya_swad_admin');
+    }
     auth.signOut();
   };
 

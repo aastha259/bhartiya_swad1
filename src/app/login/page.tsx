@@ -27,19 +27,26 @@ export default function LoginPage() {
       if (role === 'admin') {
         // Strict Admin Credential Check
         if (email === 'xyz@admin.com' && password === '12345') {
-          // Attempt actual Firebase sign-in for the admin email
-          // If the user doesn't exist yet, we fall back to anonymous for the prototype session
-          // But ideally, in production, this would be a real Firebase Auth user.
+          // Store admin session flag as requested
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('bhartiya_swad_admin', 'true');
+          }
+
+          // Attempt actual Firebase sign-in
           await signInWithEmailAndPassword(auth, email, password).catch(() => {
-             return signInAnonymously(auth);
+            // Fallback for prototype if user doesn't exist in Auth yet
+            return signInAnonymously(auth);
           });
           
           toast({
             title: "Admin Access Granted",
             description: "Welcome to the management console."
           });
-          // Redirect to Admin Dashboard as requested
-          router.push('/admin/dashboard');
+          
+          // Force a small delay to ensure AuthContext updates before redirect
+          setTimeout(() => {
+            router.push('/admin/dashboard');
+          }, 500);
         } else {
           toast({
             variant: "destructive",
@@ -49,12 +56,14 @@ export default function LoginPage() {
         }
       } else {
         // Normal User Flow
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('bhartiya_swad_admin');
+        }
         await signInAnonymously(auth);
         toast({
           title: "Login Successful",
           description: "Welcome to Bhartiya Swad."
         });
-        // Redirect to User Dashboard
         router.push('/dashboard');
       }
     } catch (error: any) {
