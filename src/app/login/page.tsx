@@ -25,11 +25,12 @@ export default function LoginPage() {
     setLoading(true);
     try {
       if (role === 'admin') {
+        // Strict Admin Credential Check
         if (email === 'xyz@admin.com' && password === '12345') {
-          // In a real app, you'd use a real Firebase user. 
-          // For prototype safety with Firestore rules, we'll try sign-in or fallback to anonymous if needed.
-          await signInWithEmailAndPassword(auth, email, password).catch(async () => {
-             // Fallback for prototype if user doesn't exist in Auth yet
+          // Attempt actual Firebase sign-in for the admin email
+          // If the user doesn't exist yet, we fall back to anonymous for the prototype session
+          // But ideally, in production, this would be a real Firebase Auth user.
+          await signInWithEmailAndPassword(auth, email, password).catch(() => {
              return signInAnonymously(auth);
           });
           
@@ -37,7 +38,8 @@ export default function LoginPage() {
             title: "Admin Access Granted",
             description: "Welcome to the management console."
           });
-          router.push('/admin');
+          // Redirect to Admin Dashboard as requested
+          router.push('/admin/dashboard');
         } else {
           toast({
             variant: "destructive",
@@ -46,7 +48,13 @@ export default function LoginPage() {
           });
         }
       } else {
+        // Normal User Flow
         await signInAnonymously(auth);
+        toast({
+          title: "Login Successful",
+          description: "Welcome to Bhartiya Swad."
+        });
+        // Redirect to User Dashboard
         router.push('/dashboard');
       }
     } catch (error: any) {

@@ -21,19 +21,26 @@ import { cn } from '@/lib/utils';
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const { user, loading, logout } = useAuth();
 
   useEffect(() => {
-    // Admin Route Protection
-    if (!user || !user.isAdmin) {
+    // Admin Route Protection: If not loading and not an admin, redirect home
+    if (!loading && (!user || !user.isAdmin)) {
       router.push('/');
     }
-  }, [user, router]);
+  }, [user, loading, router]);
 
+  // Prevent UI flickering while checking auth
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-[#FDFCFB]">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+    </div>
+  );
+  
   if (!user || !user.isAdmin) return null;
 
   const navItems = [
-    { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+    { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
     { name: 'Sales Analytics', href: '/admin/sales', icon: BarChart3 },
     { name: 'Customers', href: '/admin/customers', icon: Users },
     { name: 'Database', href: '/admin/database', icon: Database },

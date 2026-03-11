@@ -3,7 +3,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useUser, useAuth as useFirebaseAuth } from '@/firebase';
-import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { User as FirebaseUser } from 'firebase/auth';
 
 type Role = 'user' | 'admin' | null;
 
@@ -18,7 +18,6 @@ interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, role: Role) => void;
   logout: () => void;
 }
 
@@ -32,8 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isUserLoading) {
       if (firebaseUser) {
-        // In a real app, we'd fetch the role from Firestore. 
-        // For this prototype, we'll check the email for admin status.
+        // Admin identification based on the specific admin email
         const isAdmin = firebaseUser.email === 'xyz@admin.com';
         setUser({
           uid: firebaseUser.uid,
@@ -48,16 +46,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [firebaseUser, isUserLoading]);
 
-  const login = (email: string, role: Role) => {
-    // This is now handled via Firebase Auth sign-in in the login page
-  };
-
   const logout = () => {
     auth.signOut();
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading: isUserLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading: isUserLoading, logout }}>
       {children}
     </AuthContext.Provider>
   );
