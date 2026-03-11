@@ -32,14 +32,15 @@ export default function LoginPage() {
     setLoading(true);
     try {
       if (role === 'admin') {
-        if (email === 'xyz@admin.com' && password === '12345') {
+        // Updated admin password to 12345678
+        if (email === 'xyz@admin.com' && password === '12345678') {
           // Attempt to sign in with email/pass to ensure correct claims (email)
           let userCredential;
           try {
             userCredential = await signInWithEmailAndPassword(auth, email, password);
           } catch (err: any) {
             // If user doesn't exist, bootstrap the admin user
-            if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+            if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/invalid-email') {
               userCredential = await createUserWithEmailAndPassword(auth, email, password);
             } else {
               throw err;
