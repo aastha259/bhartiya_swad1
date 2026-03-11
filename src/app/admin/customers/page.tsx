@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import { 
   BarChart, 
@@ -20,16 +20,20 @@ import {
 
 export default function CustomerInsightsPage() {
   const db = useFirestore();
+  const { user } = useUser();
 
-  const usersQuery = useMemoFirebase(() => collection(db, 'users'), [db]);
+  const usersQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return collection(db, 'users');
+  }, [db, user]);
   const { data: users } = useCollection(usersQuery);
 
-  const customerData = users?.map(user => ({
-    name: user.displayName || 'Anonymous',
-    orders: user.totalOrders || 0,
-    spent: user.totalMoneySpent || 0,
-    email: user.email,
-    id: user.id
+  const customerData = users?.map(u => ({
+    name: u.displayName || 'Anonymous',
+    orders: u.totalOrders || 0,
+    spent: u.totalMoneySpent || 0,
+    email: u.email,
+    id: u.id
   })).sort((a, b) => b.spent - a.spent) || [];
 
   const chartData = customerData.slice(0, 10);
@@ -77,25 +81,25 @@ export default function CustomerInsightsPage() {
             </TableRow>
           </TableHeader>
           <TableBody className="bg-white">
-            {customerData.map((user) => (
-              <TableRow key={user.id} className="hover:bg-muted/10 transition-colors">
+            {customerData.map((cust) => (
+              <TableRow key={cust.id} className="hover:bg-muted/10 transition-colors">
                 <TableCell className="p-6">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-10 w-10 border-2 border-muted">
-                      <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`} />
-                      <AvatarFallback>{user.name[0]}</AvatarFallback>
+                      <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${cust.id}`} />
+                      <AvatarFallback>{cust.name[0]}</AvatarFallback>
                     </Avatar>
-                    <span className="font-bold">{user.name}</span>
+                    <span className="font-bold">{cust.name}</span>
                   </div>
                 </TableCell>
-                <TableCell className="font-mono text-xs text-muted-foreground">{user.id}</TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell className="font-bold">{user.orders}</TableCell>
-                <TableCell className="font-bold text-primary">₹{user.spent.toLocaleString()}</TableCell>
+                <TableCell className="font-mono text-xs text-muted-foreground">{cust.id}</TableCell>
+                <TableCell>{cust.email}</TableCell>
+                <TableCell className="font-bold">{cust.orders}</TableCell>
+                <TableCell className="font-bold text-primary">₹{cust.spent.toLocaleString()}</TableCell>
                 <TableCell>
-                  {user.orders >= 20 ? (
+                  {cust.orders >= 20 ? (
                     <Badge className="bg-yellow-500 hover:bg-yellow-600 rounded-full px-3 py-1 font-bold">Gold Customer</Badge>
-                  ) : user.orders >= 10 ? (
+                  ) : cust.orders >= 10 ? (
                     <Badge className="bg-slate-400 hover:bg-slate-500 rounded-full px-3 py-1 font-bold">Silver Customer</Badge>
                   ) : (
                     <Badge variant="outline" className="rounded-full">Regular</Badge>

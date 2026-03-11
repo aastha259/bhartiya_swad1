@@ -22,7 +22,7 @@ import {
   AreaChart,
   Area
 } from 'recharts';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, where, limit } from 'firebase/firestore';
 
 const REVENUE_DATA = [
@@ -46,19 +46,26 @@ const SALES_DATA = [
 
 export default function AdminDashboardOverview() {
   const db = useFirestore();
+  const { user } = useUser();
 
-  // Real-time data fetching for stats
-  const ordersQuery = useMemoFirebase(() => collection(db, 'orders'), [db]);
+  // Real-time data fetching for stats - Defer until user is logged in
+  const ordersQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return collection(db, 'orders');
+  }, [db, user]);
   const { data: orders } = useCollection(ordersQuery);
 
-  const usersQuery = useMemoFirebase(() => collection(db, 'users'), [db]);
+  const usersQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return collection(db, 'users');
+  }, [db, user]);
   const { data: users } = useCollection(usersQuery);
 
-  const foodsQuery = useMemoFirebase(() => collection(db, 'foods'), [db]);
+  const foodsQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return collection(db, 'foods');
+  }, [db, user]);
   const { data: foods } = useCollection(foodsQuery);
-
-  const restaurantsQuery = useMemoFirebase(() => collection(db, 'restaurants'), [db]);
-  const { data: restaurants } = useCollection(restaurantsQuery);
 
   const totalRevenue = orders?.reduce((acc, order) => acc + (order.totalAmount || 0), 0) || 0;
   const today = new Date().toISOString().split('T')[0];

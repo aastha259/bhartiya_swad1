@@ -2,6 +2,8 @@
 "use client"
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useUser, useAuth as useFirebaseAuth } from '@/firebase';
+import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 
 type Role = 'user' | 'admin' | null;
 
@@ -24,35 +26,38 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user: firebaseUser, isUserLoading } = useUser();
+  const auth = useFirebaseAuth();
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('bhartiya_swad_user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
+    if (!isUserLoading) {
+      if (firebaseUser) {
+        // In a real app, we'd fetch the role from Firestore. 
+        // For this prototype, we'll check the email for admin status.
+        const isAdmin = firebaseUser.email === 'xyz@admin.com';
+        setUser({
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Guest',
+          role: isAdmin ? 'admin' : 'user',
+          isAdmin: isAdmin
+        });
+      } else {
+        setUser(null);
+      }
     }
-    setLoading(false);
-  }, []);
+  }, [firebaseUser, isUserLoading]);
 
   const login = (email: string, role: Role) => {
-    const newUser: User = {
-      uid: Math.random().toString(36).substring(7),
-      email,
-      displayName: email.split('@')[0],
-      role,
-      isAdmin: role === 'admin'
-    };
-    setUser(newUser);
-    localStorage.setItem('bhartiya_swad_user', JSON.stringify(newUser));
+    // This is now handled via Firebase Auth sign-in in the login page
   };
 
   const logout = () => {
-    setUser(null);
-    localStorage.removeItem('bhartiya_swad_user');
+    auth.signOut();
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading: isUserLoading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

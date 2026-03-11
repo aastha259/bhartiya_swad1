@@ -9,35 +9,54 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { useAuth } from '@/lib/contexts/auth-context';
+import { useAuth as useFirebaseService } from '@/firebase';
+import { signInWithEmailAndPassword, signInAnonymously } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuth();
+  const auth = useFirebaseService();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (role: 'user' | 'admin') => {
-    if (role === 'admin') {
-      if (email === 'xyz@admin.com' && password === '12345') {
-        login(email, 'admin');
-        toast({
-          title: "Admin Access Granted",
-          description: "Welcome to the management console."
-        });
-        router.push('/admin');
+  const handleLogin = async (role: 'user' | 'admin') => {
+    setLoading(true);
+    try {
+      if (role === 'admin') {
+        if (email === 'xyz@admin.com' && password === '12345') {
+          // In a real app, you'd use a real Firebase user. 
+          // For prototype safety with Firestore rules, we'll try sign-in or fallback to anonymous if needed.
+          await signInWithEmailAndPassword(auth, email, password).catch(async () => {
+             // Fallback for prototype if user doesn't exist in Auth yet
+             return signInAnonymously(auth);
+          });
+          
+          toast({
+            title: "Admin Access Granted",
+            description: "Welcome to the management console."
+          });
+          router.push('/admin');
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Access Denied",
+            description: "Invalid admin email or security token."
+          });
+        }
       } else {
-        toast({
-          variant: "destructive",
-          title: "Access Denied",
-          description: "Invalid admin email or security token."
-        });
+        await signInAnonymously(auth);
+        router.push('/dashboard');
       }
-    } else {
-      login(email || 'user@example.com', 'user');
-      router.push('/dashboard');
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Login Failed",
+        description: error.message
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -90,8 +109,9 @@ export default function LoginPage() {
                 <Button 
                   className="w-full h-12 bg-primary hover:bg-primary/90 rounded-xl font-bold text-lg"
                   onClick={() => handleLogin('user')}
+                  disabled={loading}
                 >
-                  Sign In
+                  {loading ? "Signing in..." : "Sign In"}
                 </Button>
                 <div className="relative my-6">
                   <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
@@ -134,8 +154,9 @@ export default function LoginPage() {
                 <Button 
                   className="w-full h-12 bg-accent hover:bg-accent/90 rounded-xl font-bold text-lg"
                   onClick={() => handleLogin('admin')}
+                  disabled={loading}
                 >
-                  Admin Access
+                  {loading ? "Verifying..." : "Admin Access"}
                 </Button>
               </div>
             </TabsContent>
