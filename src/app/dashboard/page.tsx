@@ -1,7 +1,7 @@
 
 "use client"
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { 
@@ -21,7 +21,11 @@ import {
   Beef,
   Flame,
   IceCreamCone,
-  Coffee
+  Coffee,
+  Filter,
+  X,
+  Star,
+  Leaf
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -35,6 +39,7 @@ import {
   SheetFooter
 } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Slider } from '@/components/ui/slider';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { useCart } from '@/lib/contexts/cart-context';
 import FoodCard from '@/components/FoodCard';
@@ -42,6 +47,7 @@ import { personalizedFoodRecommendations } from '@/ai/flows/personalized-food-re
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { cn } from '@/lib/utils';
 
 const categoriesConfig = [
   { name: 'North Indian', icon: UtensilsCrossed, image: 'cat-north-indian' },
@@ -62,14 +68,21 @@ export default function DashboardPage() {
   
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  
+  // Advanced Filters
+  const [isVegOnly, setIsVegOnly] = useState<boolean | null>(null); // null = all, true = veg, false = non-veg
+  const [maxPrice, setMaxPrice] = useState(1000);
+  const [minRating, setMinRating] = useState(0);
+  const [showFilters, setShowFilters] = useState(false);
+
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [loadingRecs, setLoadingRecs] = useState(false);
 
-  // Fetch all available foods from Firestore
+  // Fetch all available foods
   const foodsQuery = useMemoFirebase(() => collection(db, 'foods'), [db]);
   const { data: allFoods, isLoading: foodsLoading } = useCollection(foodsQuery);
 
-  // Memoized query for trending items
+  // Trending items
   const trendingQuery = useMemoFirebase(() => {
     return query(collection(db, 'foods'), where('trending', '==', true), limit(4));
   }, [db]);
@@ -79,7 +92,7 @@ export default function DashboardPage() {
     if (!user) router.push('/login');
   }, [user, router]);
 
-  // Fetch real order history and generate AI recommendations
+  // AI Recommendations logic
   useEffect(() => {
     async function getPersonalizedRecommendations() {
       if (!user?.uid || !allFoods || allFoods.length === 0) return;
@@ -96,7 +109,6 @@ export default function DashboardPage() {
         const orderSnap = await getDocs(q);
         
         const history: { name: string; category?: string }[] = [];
-        
         for (const orderDoc of orderSnap.docs) {
           const itemsRef = collection(db, 'orders', orderDoc.id, 'orderItems');
           const itemsSnap = await getDocs(itemsRef);
@@ -120,7 +132,6 @@ export default function DashboardPage() {
             imageURL: f.imageURL
           }))
         });
-        
         setRecommendations(result.recommendations);
       } catch (e) {
         console.error("Failed to fetch recommendations", e);
@@ -128,23 +139,38 @@ export default function DashboardPage() {
         setLoadingRecs(false);
       }
     }
-
-    if (allFoods) {
-      getPersonalizedRecommendations();
-    }
+    if (allFoods) getPersonalizedRecommendations();
   }, [user?.uid, allFoods, db]);
 
-  const filteredFoods = (allFoods || []).filter(food => {
-    const matchesSearch = food.name.toLowerCase().includes(search.toLowerCase());
-    const matchesCategory = selectedCategory === 'All' || food.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  // Filtering Logic
+  const filteredFoods = useMemo(() => {
+    return (allFoods || []).filter(food => {
+      const matchesSearch = food.name.toLowerCase().includes(search.toLowerCase()) || 
+                            food.category.toLowerCase().includes(search.toLowerCase());
+      const matchesCategory = selectedCategory === 'All' || food.category === selectedCategory;
+      const matchesVeg = isVegOnly === null ? true : food.isVeg === isVegOnly;
+      const matchesPrice = food.price <= maxPrice;
+      const matchesRating = food.rating >= minRating;
+
+      return matchesSearch && matchesCategory && matchesVeg && matchesPrice && matchesRating;
+    });
+  }, [allFoods, search, selectedCategory, isVegOnly, maxPrice, minRating]);
+
+  const activeFilterCount = (isVegOnly !== null ? 1 : 0) + (maxPrice < 1000 ? 1 : 0) + (minRating > 0 ? 1 : 0);
+
+  const resetFilters = () => {
+    setIsVegOnly(null);
+    setMaxPrice(1000);
+    setMinRating(0);
+    setSearch('');
+    setSelectedCategory('All');
+  };
 
   if (!user) return null;
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
+      {/* Navigation Header */}
       <nav className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur-xl border-b px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-6">
           <div className="flex items-center gap-3">
@@ -154,22 +180,121 @@ export default function DashboardPage() {
             <span className="font-headline text-xl font-bold hidden md:block text-foreground">Bhartiya Swad</span>
           </div>
 
-          <div className="flex-1 max-w-xl relative">
-            <Search className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
-            <Input 
-              placeholder="Search for dishes, cuisines..." 
-              className="pl-10 h-11 bg-muted/50 border-none rounded-2xl w-full"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+          <div className="flex-1 max-w-xl flex gap-2">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
+              <Input 
+                placeholder="Search for dishes, cuisines..." 
+                className="pl-10 h-11 bg-muted/50 border-none rounded-2xl w-full"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              {search && (
+                <button onClick={() => setSearch('')} className="absolute right-3 top-3">
+                  <X className="w-5 h-5 text-muted-foreground" />
+                </button>
+              )}
+            </div>
+            
+            <Sheet open={showFilters} onOpenChange={setShowFilters}>
+              <SheetTrigger asChild>
+                <Button variant="outline" className="h-11 rounded-2xl gap-2 border-primary/20 hover:bg-primary/5 relative">
+                  <Filter className="w-5 h-5" />
+                  <span className="hidden sm:inline">Filters</span>
+                  {activeFilterCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-white text-[10px] rounded-full flex items-center justify-center font-bold">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                </Button>
+              </SheetTrigger>
+              <SheetContent className="rounded-l-[2.5rem]">
+                <SheetHeader className="pb-6 border-b">
+                  <SheetTitle className="text-2xl font-headline flex items-center gap-2">
+                    <Filter className="w-6 h-6 text-primary" />
+                    Advanced Filters
+                  </SheetTitle>
+                </SheetHeader>
+                <div className="py-8 space-y-10">
+                  {/* Dietary Filter */}
+                  <div className="space-y-4">
+                    <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Dietary Preference</label>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant={isVegOnly === null ? 'default' : 'outline'} 
+                        onClick={() => setIsVegOnly(null)}
+                        className="flex-1 rounded-xl h-12 font-bold"
+                      >
+                        All
+                      </Button>
+                      <Button 
+                        variant={isVegOnly === true ? 'default' : 'outline'} 
+                        onClick={() => setIsVegOnly(true)}
+                        className={cn("flex-1 rounded-xl h-12 font-bold gap-2", isVegOnly === true ? 'bg-green-600' : 'hover:border-green-600 hover:text-green-600')}
+                      >
+                        <Leaf className="w-4 h-4" /> Veg
+                      </Button>
+                      <Button 
+                        variant={isVegOnly === false ? 'default' : 'outline'} 
+                        onClick={() => setIsVegOnly(false)}
+                        className={cn("flex-1 rounded-xl h-12 font-bold gap-2", isVegOnly === false ? 'bg-red-600' : 'hover:border-red-600 hover:text-red-600')}
+                      >
+                        <Beef className="w-4 h-4" /> Non-Veg
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Price Filter */}
+                  <div className="space-y-6">
+                    <div className="flex justify-between items-center">
+                      <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Max Price</label>
+                      <span className="font-headline font-black text-primary text-lg">₹{maxPrice}</span>
+                    </div>
+                    <Slider 
+                      value={[maxPrice]} 
+                      max={1000} 
+                      step={10} 
+                      onValueChange={([val]) => setMaxPrice(val)}
+                      className="py-4"
+                    />
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" className="rounded-full text-[10px] font-black h-8" onClick={() => setMaxPrice(200)}>Under ₹200</Button>
+                      <Button variant="outline" size="sm" className="rounded-full text-[10px] font-black h-8" onClick={() => setMaxPrice(500)}>Under ₹500</Button>
+                    </div>
+                  </div>
+
+                  {/* Rating Filter */}
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Minimum Rating</label>
+                      <div className="flex items-center gap-1 text-yellow-500">
+                        <Star className="w-4 h-4 fill-current" />
+                        <span className="font-headline font-black text-lg">{minRating === 0 ? 'Any' : minRating + '+'}</span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-4 gap-2">
+                      {[3, 4, 4.5, 4.8].map((r) => (
+                        <Button 
+                          key={r}
+                          variant={minRating === r ? 'default' : 'outline'}
+                          onClick={() => setMinRating(minRating === r ? 0 : r)}
+                          className="rounded-xl font-bold h-10"
+                        >
+                          {r}★
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <SheetFooter className="flex-col sm:flex-col gap-4 pt-6 border-t mt-auto">
+                  <Button variant="ghost" className="w-full text-muted-foreground font-bold" onClick={resetFilters}>Reset All</Button>
+                  <Button className="w-full h-14 rounded-2xl font-black text-lg shadow-xl shadow-primary/20" onClick={() => setShowFilters(false)}>Show Results</Button>
+                </SheetFooter>
+              </SheetContent>
+            </Sheet>
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 px-3 py-2 rounded-full">
-              <MapPin className="w-4 h-4 text-primary" />
-              <span>Andheri East, Mumbai</span>
-            </div>
-
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="ghost" className="relative p-2 rounded-full">
@@ -181,7 +306,7 @@ export default function DashboardPage() {
                   )}
                 </Button>
               </SheetTrigger>
-              <SheetContent className="w-full sm:max-w-md flex flex-col">
+              <SheetContent className="w-full sm:max-w-md flex flex-col rounded-l-[2.5rem]">
                 <SheetHeader className="pb-6 border-b">
                   <SheetTitle className="text-2xl font-headline flex items-center gap-2">
                     <ShoppingCart className="w-6 h-6 text-primary" />
@@ -241,8 +366,36 @@ export default function DashboardPage() {
         </div>
       </nav>
 
-      {/* Main Content */}
+      {/* Main Dashboard Area */}
       <main className="max-w-7xl mx-auto px-6 py-8">
+        
+        {/* Active Filter Badges */}
+        {activeFilterCount > 0 && (
+          <div className="flex flex-wrap gap-2 mb-8 animate-in fade-in slide-in-from-top-2">
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground self-center mr-2">Applied:</span>
+            {isVegOnly !== null && (
+              <Badge variant="secondary" className={cn("rounded-full px-4 py-1 gap-2 font-bold", isVegOnly ? "text-green-700 bg-green-50" : "text-red-700 bg-red-50")}>
+                {isVegOnly ? <Leaf className="w-3 h-3" /> : <Beef className="w-3 h-3" />}
+                {isVegOnly ? 'Veg' : 'Non-Veg'}
+                <X className="w-3 h-3 cursor-pointer ml-2" onClick={() => setIsVegOnly(null)} />
+              </Badge>
+            )}
+            {maxPrice < 1000 && (
+              <Badge variant="secondary" className="rounded-full px-4 py-1 gap-2 font-bold bg-primary/5 text-primary">
+                Under ₹{maxPrice}
+                <X className="w-3 h-3 cursor-pointer ml-2" onClick={() => setMaxPrice(1000)} />
+              </Badge>
+            )}
+            {minRating > 0 && (
+              <Badge variant="secondary" className="rounded-full px-4 py-1 gap-2 font-bold bg-yellow-50 text-yellow-700">
+                <Star className="w-3 h-3 fill-current" />
+                {minRating}+ Rating
+                <X className="w-3 h-3 cursor-pointer ml-2" onClick={() => setMinRating(0)} />
+              </Badge>
+            )}
+            <Button variant="ghost" size="sm" className="h-8 rounded-full text-xs font-black" onClick={resetFilters}>Clear All</Button>
+          </div>
+        )}
         
         {/* Explore Categories Section */}
         <section className="mb-12">
@@ -292,7 +445,7 @@ export default function DashboardPage() {
         </section>
 
         {/* Trending Now Section */}
-        {trendingFoods && trendingFoods.length > 0 && selectedCategory === 'All' && (
+        {trendingFoods && trendingFoods.length > 0 && selectedCategory === 'All' && !search && activeFilterCount === 0 && (
           <section className="mb-16">
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-3xl font-headline font-black flex items-center gap-3">
@@ -308,8 +461,8 @@ export default function DashboardPage() {
           </section>
         )}
 
-        {/* Recommendations Section */}
-        {(recommendations.length > 0 || loadingRecs) && selectedCategory === 'All' && (
+        {/* AI Recommendations Section */}
+        {(recommendations.length > 0 || loadingRecs) && selectedCategory === 'All' && !search && activeFilterCount === 0 && (
           <div className="mb-16 bg-gradient-to-br from-primary/5 to-accent/5 p-8 rounded-[2.5rem] border border-primary/10 relative overflow-hidden">
             <div className="flex items-center justify-between mb-8">
               <div>
@@ -327,22 +480,22 @@ export default function DashboardPage() {
                 <FoodCard key={food.id} food={food} />
               ))}
             </div>
-            
-            {!loadingRecs && recommendations.length === 0 && (
-              <div className="py-12 text-center opacity-40">
-                <Utensils className="w-12 h-12 mx-auto mb-4" />
-                <p className="font-bold">Order more to unlock personalized suggestions!</p>
-              </div>
-            )}
           </div>
         )}
 
-        {/* Main Grid */}
+        {/* Main Specials Grid */}
         <div className="mb-16">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-3xl font-headline font-black flex items-center gap-3">
               <TrendingUp className="w-8 h-8 text-accent" />
-              {selectedCategory === 'All' ? 'Popular Dishes' : `${selectedCategory} Specials`}
+              {search || activeFilterCount > 0 ? (
+                <>
+                  Search <span className="text-primary italic">Results</span>
+                  <Badge variant="outline" className="font-bold text-muted-foreground">{filteredFoods.length} items</Badge>
+                </>
+              ) : (
+                selectedCategory === 'All' ? 'Popular Dishes' : `${selectedCategory} Specials`
+              )}
             </h2>
           </div>
           
@@ -360,9 +513,13 @@ export default function DashboardPage() {
         </div>
 
         {!foodsLoading && filteredFoods.length === 0 && (
-          <div className="text-center py-20">
-            <Utensils className="w-16 h-16 text-muted-foreground/20 mx-auto mb-4" />
-            <p className="text-xl text-muted-foreground font-bold">No dishes found matching your selection</p>
+          <div className="text-center py-32 flex flex-col items-center">
+            <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mb-6">
+              <Utensils className="w-12 h-12 text-muted-foreground opacity-30" />
+            </div>
+            <p className="text-2xl text-foreground font-black">No dishes found</p>
+            <p className="text-muted-foreground mt-2 max-w-sm font-medium">Try adjusting your filters or search query to find what you're looking for.</p>
+            <Button variant="outline" className="mt-8 rounded-xl font-bold border-primary text-primary" onClick={resetFilters}>Clear Filters</Button>
           </div>
         )}
       </main>

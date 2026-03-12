@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -165,6 +166,10 @@
           "type": "boolean",
           "description": "A flag indicating if this food item is currently marked as trending or popular."
         },
+        "isVeg": {
+          "type": "boolean",
+          "description": "Indicates if the food item is vegetarian (true) or non-vegetarian (false)."
+        },
         "categoryId": {
           "type": "string",
           "description": "Reference to the Category this food item belongs to. (Relationship: Category 1:N Food)"
@@ -190,6 +195,7 @@
         "imageURL",
         "rating",
         "trending",
+        "isVeg",
         "categoryId",
         "restaurantId",
         "totalOrders",
@@ -376,7 +382,6 @@
           "description": "Stores individual items within a specific order as a subcollection. Access is dependent on the parent 'Order' document's authorization. Includes a snapshot of 'foodName', 'unitPrice' for historical accuracy."
         }
       }
-    ],
-    "reasoning": "The recommended Firestore data structure for 'Bhartiya Swad' prioritizes secure, scalable, and debuggable authorization rules by adhering to the core design principles. This structure leverages denormalization for authorization independence, employs structural segregation for homogeneous security postures, and standardizes access modeling patterns.\n\n**Authorization Independence (via Denormalization and DBAC):**\n\n1.  **Admin Roles:** A dedicated top-level collection, `/admin_roles/{adminId}`, is introduced. For a user to be identified as an 'admin', a document with their `uid` must exist in this collection. This pattern (Existence over Content, DBAC) is critical for authorization independence. Firebase Security Rules can check `exists(/databases/$(database)/documents/admin_roles/$(request.auth.uid))` without needing to `get()` the user's main profile document (`/users/{userId}`). This makes admin checks atomic and highly performant, avoiding hierarchical dependencies.\n2.  **User-Owned Data:** For entities like `orders`, which are strongly associated with a user, the `userId` is stored directly within each `Order` document. This denormalizes the ownership information, allowing security rules to directly compare `request.auth.uid == resource.data.userId` without performing `get()` operations on parent user documents. This facilitates atomic creation and updates for orders.\n3.  **Nested Data (OrderItems):** `OrderItem` documents are nested as a subcollection under `/orders/{orderId}/orderItems/{orderItemId}`. Authorization for `OrderItem` documents implicitly relies on the parent `Order` document. If a user has `read` access to an `Order` document, they can read its associated `OrderItem` documents. This is an efficient and natural pattern for tightly coupled child data.\n\n**QAPs (Queries are not Filters) Support:**\n\n1.  **Public Collections:** Collections like `/restaurants`, `/categories`, and `/foods` are designed to be globally readable by all users. Their security posture is homogeneous (everyone can read, only admins can write). This inherently supports efficient `list` operations as no complex filtering or `get()` calls are required in the security rules for reads. Clients can query these collections directly without needing to add specific filters for authorization.\n2.  **User-Specific Data:** The `/users/{userId}` collection uses path-based ownership, meaning a regular user can only `get()` or `list` their own document (`/users/$(request.auth.uid)`). Any attempt to `list` other user profiles by a non-admin would be denied by rules. For the `/orders/{orderId}` collection, while it's a top-level collection, the security rules will enforce that a non-admin user can *only* `list` orders where `resource.data.userId == request.auth.uid`. This means client-side queries for orders *must* include a `where('userId', '==', request.auth.uid)` filter. This adheres to QAPs because the rule prevents unauthorized access by ensuring client queries are appropriately scoped, rather than attempting to filter results on the server after unauthorized data has been fetched.\n3.  **Admin Access:** Admins, identified via the `/admin_roles` collection, have broad `read` and `write` access across almost all collections, enabling them to perform global `list` operations (e.g., viewing all orders, all customers) as required by the Admin Dashboard. Their authorization check is direct and does not impose filtering requirements on their queries beyond what is intended."
+    ]
   }
 }

@@ -1,8 +1,9 @@
+
 "use client"
 
 import React from 'react';
 import Image from 'next/image';
-import { Star, Plus } from 'lucide-react';
+import { Star, Plus, Leaf, Beef } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +20,7 @@ interface FoodCardProps {
     imageURL: string;
     trending?: boolean;
     description?: string;
+    isVeg?: boolean;
   };
 }
 
@@ -28,7 +30,7 @@ export default function FoodCard({ food }: FoodCardProps) {
   return (
     <div className="group h-full">
       <Card className="relative h-full flex flex-col overflow-hidden transition-all duration-500 bg-white border border-border/40 shadow-sm hover:shadow-2xl hover:-translate-y-2 rounded-[2.5rem]">
-        {/* Image Container with consistent aspect ratio and soft inner shadow effect */}
+        {/* Image Container */}
         <div className="relative w-full aspect-[4/3] overflow-hidden bg-muted m-3 rounded-[2rem] shadow-md">
           <Image
             src={food.imageURL}
@@ -38,16 +40,23 @@ export default function FoodCard({ food }: FoodCardProps) {
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
           />
           
-          {/* Subtle vignette overlay for depth */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-60" />
           
           {/* Badges Overlay */}
           <div className="absolute top-4 left-4 right-4 flex justify-between items-start pointer-events-none">
-            {food.trending && (
-              <Badge className="bg-accent text-white border-none px-3 py-1 font-black text-[9px] uppercase tracking-widest shadow-lg animate-pulse backdrop-blur-md">
-                Trending
-              </Badge>
-            )}
+            <div className="flex flex-col gap-2">
+              {food.trending && (
+                <Badge className="bg-accent text-white border-none px-3 py-1 font-black text-[9px] uppercase tracking-widest shadow-lg animate-pulse backdrop-blur-md">
+                  Trending
+                </Badge>
+              )}
+              <div className={cn(
+                "w-6 h-6 rounded-md flex items-center justify-center border-2 backdrop-blur-md shadow-sm",
+                food.isVeg ? "bg-white/90 border-green-600 text-green-600" : "bg-white/90 border-red-600 text-red-600"
+              )}>
+                {food.isVeg ? <Leaf className="w-3 h-3" /> : <Beef className="w-3 h-3" />}
+              </div>
+            </div>
             <div className="ml-auto bg-white/90 backdrop-blur-md px-2 py-1 rounded-xl shadow-sm border border-white/40 flex items-center gap-1">
               <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
               <span className="text-[10px] font-black text-foreground">{food.rating}</span>

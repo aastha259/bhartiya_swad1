@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState } from 'react';
@@ -6,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Trash2, Plus, Search, Database, Sparkles, Loader2 } from 'lucide-react';
+import { Trash2, Plus, Search, Database, Sparkles, Loader2, Leaf, Beef } from 'lucide-react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, doc, deleteDoc, updateDoc, addDoc, getDocs, query, where } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
@@ -74,22 +75,22 @@ export default function AdminDatabasePage() {
       }
 
       const sampleFoods = [
-        { name: 'Paneer Butter Masala', price: 280, cat: 'North Indian', desc: 'Creamy tomato gravy with soft cottage cheese cubes.', seed: 'paneer-butter', trending: true },
-        { name: 'Masala Dosa', price: 120, cat: 'South Indian', desc: 'Crispy fermented crepe with spicy potato masala filling.', seed: 'dosa-plate', trending: true },
-        { name: 'Chole Bhature', price: 150, cat: 'Street Food', desc: 'Spicy chickpea curry served with fluffy deep-fried leavened bread.', seed: 'chole-bhature', trending: false },
-        { name: 'Butter Chicken', price: 350, cat: 'North Indian', desc: 'Classic tandoori chicken simmered in a rich makhani gravy.', seed: 'butter-chicken', trending: true },
-        { name: 'Veg Biryani', price: 220, cat: 'Biryani', desc: 'Fragrant long-grain basmati rice cooked with garden-fresh vegetables.', seed: 'veg-biryani', trending: false },
-        { name: 'Chicken Biryani', price: 320, cat: 'Biryani', desc: 'Authentic Hyderabadi style slow-cooked chicken and rice.', seed: 'chicken-biryani', trending: true },
-        { name: 'Pani Puri', price: 60, cat: 'Street Food', desc: 'Tangy and spicy flavored water filled in crispy wheat puris.', seed: 'pani-puri', trending: true },
-        { name: 'Samosa', price: 40, cat: 'Street Food', desc: 'Triangular pastry filled with spiced potatoes and green peas.', seed: 'samosa-dish', trending: false },
-        { name: 'Pav Bhaji', price: 140, cat: 'Street Food', desc: 'Spicy mashed vegetable curry served with butter-toasted buns.', seed: 'pav-bhaji', trending: true },
-        { name: 'Vada Pav', price: 50, cat: 'Street Food', desc: 'The iconic Mumbai spicy potato fritter burger.', seed: 'vada-pav', trending: false },
-        { name: 'Margherita Pizza', price: 250, cat: 'Fast Food', desc: 'Classic sourdough base topped with fresh mozzarella and basil.', seed: 'margherita', trending: false },
-        { name: 'Hakka Noodles', price: 180, cat: 'Chinese', desc: 'Wok-tossed stir-fried noodles with crunchy vegetables.', seed: 'noodles-wok', trending: false },
-        { name: 'Gulab Jamun', price: 80, cat: 'Sweets & Desserts', desc: 'Deep-fried milk solids balls soaked in rose-flavored sugar syrup.', seed: 'gulab-jamun', trending: false },
-        { name: 'Rasgulla', price: 70, cat: 'Sweets & Desserts', desc: 'Soft and spongy cottage cheese balls in light sugar syrup.', seed: 'rasgulla', trending: false },
-        { name: 'Cold Coffee', price: 100, cat: 'Beverages', desc: 'Rich and creamy chilled coffee topped with chocolate syrup.', seed: 'cold-coffee', trending: false },
-        { name: 'Mango Lassi', price: 90, cat: 'Beverages', desc: 'Smooth and refreshing traditional yogurt drink with Alphonso mango.', seed: 'mango-lassi', trending: false },
+        { name: 'Paneer Butter Masala', price: 280, cat: 'North Indian', desc: 'Creamy tomato gravy with soft cottage cheese cubes.', seed: 'paneer-butter', trending: true, isVeg: true },
+        { name: 'Masala Dosa', price: 120, cat: 'South Indian', desc: 'Crispy fermented crepe with spicy potato masala filling.', seed: 'dosa-plate', trending: true, isVeg: true },
+        { name: 'Chole Bhature', price: 150, cat: 'Street Food', desc: 'Spicy chickpea curry served with fluffy deep-fried leavened bread.', seed: 'chole-bhature', trending: false, isVeg: true },
+        { name: 'Butter Chicken', price: 350, cat: 'North Indian', desc: 'Classic tandoori chicken simmered in a rich makhani gravy.', seed: 'butter-chicken', trending: true, isVeg: false },
+        { name: 'Veg Biryani', price: 220, cat: 'Biryani', desc: 'Fragrant long-grain basmati rice cooked with garden-fresh vegetables.', seed: 'veg-biryani', trending: false, isVeg: true },
+        { name: 'Chicken Biryani', price: 320, cat: 'Biryani', desc: 'Authentic Hyderabadi style slow-cooked chicken and rice.', seed: 'chicken-biryani', trending: true, isVeg: false },
+        { name: 'Pani Puri', price: 60, cat: 'Street Food', desc: 'Tangy and spicy flavored water filled in crispy wheat puris.', seed: 'pani-puri', trending: true, isVeg: true },
+        { name: 'Samosa', price: 40, cat: 'Street Food', desc: 'Triangular pastry filled with spiced potatoes and green peas.', seed: 'samosa-dish', trending: false, isVeg: true },
+        { name: 'Pav Bhaji', price: 140, cat: 'Street Food', desc: 'Spicy mashed vegetable curry served with butter-toasted buns.', seed: 'pav-bhaji', trending: true, isVeg: true },
+        { name: 'Vada Pav', price: 50, cat: 'Street Food', desc: 'The iconic Mumbai spicy potato fritter burger.', seed: 'vada-pav', trending: false, isVeg: true },
+        { name: 'Margherita Pizza', price: 250, cat: 'Fast Food', desc: 'Classic sourdough base topped with fresh mozzarella and basil.', seed: 'margherita', trending: false, isVeg: true },
+        { name: 'Hakka Noodles', price: 180, cat: 'Chinese', desc: 'Wok-tossed stir-fried noodles with crunchy vegetables.', seed: 'noodles-wok', trending: false, isVeg: true },
+        { name: 'Gulab Jamun', price: 80, cat: 'Sweets & Desserts', desc: 'Deep-fried milk solids balls soaked in rose-flavored sugar syrup.', seed: 'gulab-jamun', trending: false, isVeg: true },
+        { name: 'Rasgulla', price: 70, cat: 'Sweets & Desserts', desc: 'Soft and spongy cottage cheese balls in light sugar syrup.', seed: 'rasgulla', trending: false, isVeg: true },
+        { name: 'Cold Coffee', price: 100, cat: 'Beverages', desc: 'Rich and creamy chilled coffee topped with chocolate syrup.', seed: 'cold-coffee', trending: false, isVeg: true },
+        { name: 'Mango Lassi', price: 90, cat: 'Beverages', desc: 'Smooth and refreshing traditional yogurt drink with Alphonso mango.', seed: 'mango-lassi', trending: false, isVeg: true },
       ];
 
       for (const item of sampleFoods) {
@@ -106,6 +107,7 @@ export default function AdminDatabasePage() {
             imageURL: `https://picsum.photos/seed/${item.seed}/800/600`,
             rating: parseFloat((4.2 + Math.random() * 0.7).toFixed(1)),
             trending: item.trending,
+            isVeg: item.isVeg,
             totalOrders: Math.floor(Math.random() * 50),
             totalRevenue: 0
           });
@@ -114,7 +116,7 @@ export default function AdminDatabasePage() {
 
       toast({
         title: "Database Initialized",
-        description: "Signature dishes and categories have been added with high-quality visuals."
+        description: "Signature dishes and categories have been added with dietary flags."
       });
     } catch (e: any) {
       toast({
@@ -139,6 +141,7 @@ export default function AdminDatabasePage() {
       imageURL: `https://picsum.photos/seed/${Math.floor(Math.random() * 10000)}/800/600`,
       rating: 4.5,
       trending: formData.get('trending') === 'on',
+      isVeg: formData.get('isVeg') === 'on',
       totalOrders: 0,
       totalRevenue: 0
     };
@@ -235,9 +238,15 @@ export default function AdminDatabasePage() {
                       <Label htmlFor="description">Description</Label>
                       <Input id="description" name="description" placeholder="A brief description..." className="rounded-xl" />
                     </div>
-                    <div className="flex items-center gap-2">
-                      <input type="checkbox" id="trending" name="trending" className="w-4 h-4 rounded border-primary text-primary accent-primary" />
-                      <Label htmlFor="trending">Mark as Trending</Label>
+                    <div className="flex gap-4">
+                      <div className="flex items-center gap-2">
+                        <input type="checkbox" id="trending" name="trending" className="w-4 h-4 rounded border-primary text-primary accent-primary" />
+                        <Label htmlFor="trending">Trending</Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input type="checkbox" id="isVeg" name="isVeg" defaultChecked className="w-4 h-4 rounded border-green-600 text-green-600 accent-green-600" />
+                        <Label htmlFor="isVeg">Vegetarian</Label>
+                      </div>
                     </div>
                     <DialogFooter>
                       <Button type="submit" className="w-full rounded-xl font-bold bg-primary h-12">Save Item</Button>
@@ -250,6 +259,7 @@ export default function AdminDatabasePage() {
               <TableHeader className="bg-muted/30">
                 <TableRow>
                   <TableHead className="font-bold p-6">Name</TableHead>
+                  <TableHead className="font-bold">Type</TableHead>
                   <TableHead className="font-bold">Category</TableHead>
                   <TableHead className="font-bold">Price (₹)</TableHead>
                   <TableHead className="font-bold text-right pr-6">Action</TableHead>
@@ -265,6 +275,13 @@ export default function AdminDatabasePage() {
                         </div>
                         <span className="font-bold">{food.name}</span>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {food.isVeg ? (
+                        <Leaf className="w-5 h-5 text-green-600" />
+                      ) : (
+                        <Beef className="w-5 h-5 text-red-600" />
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary" className="rounded-full">
