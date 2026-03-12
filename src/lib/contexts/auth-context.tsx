@@ -29,10 +29,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const auth = useFirebaseAuth();
 
   useEffect(() => {
-    const checkAdmin = () => {
+    const syncUser = () => {
       if (!isUserLoading) {
         if (firebaseUser) {
-          // Check for hardcoded admin email or a persistent session flag
+          // Check for admin session flag or hardcoded email
           const isAdminSession = typeof window !== 'undefined' && localStorage.getItem('bhartiya_swad_admin') === 'true';
           const isEmailAdmin = firebaseUser.email === 'xyz@admin.com';
           const isAdmin = isEmailAdmin || isAdminSession;
@@ -50,11 +50,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    checkAdmin();
+    syncUser();
     
-    // Listen for storage changes in case login happens in another tab
-    window.addEventListener('storage', checkAdmin);
-    return () => window.removeEventListener('storage', checkAdmin);
+    // Watch for localStorage changes across tabs
+    window.addEventListener('storage', syncUser);
+    return () => window.removeEventListener('storage', syncUser);
   }, [firebaseUser, isUserLoading]);
 
   const logout = () => {

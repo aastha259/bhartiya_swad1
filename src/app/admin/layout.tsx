@@ -33,6 +33,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     if (!loading) {
+      // Strict Admin Check: If not logged in or not an admin, redirect to homepage
       if (!user || !user.isAdmin) {
         router.push('/');
       }
@@ -41,10 +42,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="flex flex-col items-center gap-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <p className="font-bold text-muted-foreground text-sm">Verifying Admin Access...</p>
+      </div>
     </div>
   );
   
+  // Prevent flashing content if unauthorized
   if (!user || !user.isAdmin) return null;
 
   const navItems = [

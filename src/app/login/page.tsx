@@ -32,31 +32,40 @@ export default function LoginPage() {
     setLoading(true);
     try {
       if (role === 'admin') {
-        // Updated admin password to 12345678
+        // Admin Login with specific credentials
         if (email === 'xyz@admin.com' && password === '12345678') {
-          // Attempt to sign in with email/pass to ensure correct claims (email)
           let userCredential;
           try {
+            // Attempt to sign in
             userCredential = await signInWithEmailAndPassword(auth, email, password);
           } catch (err: any) {
-            // If user doesn't exist, bootstrap the admin user
-            if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/invalid-email') {
+            // If admin user doesn't exist in Auth yet, bootstrap them
+            if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
               userCredential = await createUserWithEmailAndPassword(auth, email, password);
             } else {
               throw err;
             }
           }
 
-          // Persist admin session flag for UI logic
+          // Persist admin session flag immediately
           if (typeof window !== 'undefined') {
             localStorage.setItem('bhartiya_swad_admin', 'true');
           }
 
-          // Ensure admin_roles record exists
+          // Ensure admin record exists in Firestore for rules and analytics
           await setDoc(doc(db, 'admin_roles', userCredential.user.uid), {
             email: userCredential.user.email,
             role: 'admin',
             updatedAt: new Date().toISOString()
+          }, { merge: true });
+
+          await setDoc(doc(db, 'users', userCredential.user.uid), {
+            id: userCredential.user.uid,
+            email: userCredential.user.email,
+            displayName: 'System Administrator',
+            role: 'admin',
+            totalOrders: 0,
+            totalMoneySpent: 0
           }, { merge: true });
           
           toast({
@@ -64,10 +73,10 @@ export default function LoginPage() {
             description: "Welcome to the management console."
           });
           
-          // Small delay to ensure state propagates
+          // Small delay to allow AuthContext to catch up
           setTimeout(() => {
             router.push('/admin/dashboard');
-          }, 500);
+          }, 800);
         } else {
           toast({
             variant: "destructive",
@@ -76,13 +85,14 @@ export default function LoginPage() {
           });
         }
       } else {
+        // Normal User Login (Anonymous for demo)
         if (typeof window !== 'undefined') {
           localStorage.removeItem('bhartiya_swad_admin');
         }
         await signInAnonymously(auth);
         toast({
           title: "Login Successful",
-          description: "Welcome to Bhartiya Swad."
+          description: "Welcome back to Bhartiya Swad."
         });
         router.push('/dashboard');
       }
@@ -90,7 +100,7 @@ export default function LoginPage() {
       toast({
         variant: "destructive",
         title: "Login Failed",
-        description: error.message
+        description: error.message || "An unexpected error occurred."
       });
     } finally {
       setLoading(false);
@@ -168,7 +178,7 @@ export default function LoginPage() {
                 <div className="bg-accent/10 border border-accent/20 p-4 rounded-xl flex items-start gap-3 mb-4">
                   <Shield className="w-5 h-5 text-accent mt-0.5" />
                   <p className="text-sm text-accent-foreground">
-                    Admin access is restricted to authorized personnel only. Please enter your secure credentials.
+                    Admin access restricted. Log in with secure administrative credentials.
                   </p>
                 </div>
                 <div className="relative">
@@ -184,7 +194,7 @@ export default function LoginPage() {
                   <Lock className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
                   <Input 
                     type="password" 
-                    placeholder="Security Token" 
+                    placeholder="Admin Password" 
                     className="pl-10 h-12 rounded-xl"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
