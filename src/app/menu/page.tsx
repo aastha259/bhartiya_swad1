@@ -11,21 +11,17 @@ import {
   LogOut,
   Utensils,
   Loader2,
-  Pizza,
-  Ham as BurgerIcon,
-  Soup,
+  Flame,
   Store,
   Beef,
-  Flame,
   IceCreamCone,
   Coffee,
   Filter,
   LayoutDashboard,
   CircleDot,
-  Container,
-  GlassWater,
   Leaf,
-  UtensilsCrossed
+  Soup,
+  Plus
 } from 'lucide-react';
 import Link from 'next/link';
 import { Input } from '@/components/ui/input';
@@ -46,24 +42,17 @@ import { useCart } from '@/lib/contexts/cart-context';
 import FoodCard from '@/components/FoodCard';
 import { personalizedFoodRecommendations } from '@/ai/flows/personalized-food-recommendations-flow';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, limit } from 'firebase/firestore';
+import { collection, query, orderBy, limit, writeBatch, getDocs, doc } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 
 const categoriesConfig = [
-  { name: 'Pizza', icon: Pizza },
-  { name: 'Burgers', icon: BurgerIcon },
-  { name: 'Biryani', icon: Soup },
-  { name: 'North Indian', icon: Flame },
-  { name: 'South Indian', icon: CircleDot },
-  { name: 'Chinese', icon: Container },
-  { name: 'Fast Food', icon: Utensils },
+  { name: 'Starters', icon: Flame },
+  { name: 'Main Course - Veg', icon: Leaf },
+  { name: 'Main Course - Non-Veg', icon: Beef },
+  { name: 'Breads', icon: CircleDot },
+  { name: 'Rice & Biryani', icon: Soup },
   { name: 'Street Food', icon: Store },
-  { name: 'Sandwiches', icon: GlassWater },
-  { name: 'Rolls & Wraps', icon: Beef },
-  { name: 'Pasta', icon: UtensilsCrossed },
-  { name: 'Salads', icon: Leaf },
   { name: 'Desserts', icon: IceCreamCone },
-  { name: 'Ice Cream', icon: IceCreamCone },
   { name: 'Beverages', icon: Coffee },
 ];
 
@@ -81,9 +70,7 @@ export default function MenuPage() {
   const [maxPrice, setMaxPrice] = useState(1000);
   const [minRating, setMinRating] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
-
-  const [recommendations, setRecommendations] = useState<any[]>([]);
-  const [loadingRecs, setLoadingRecs] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -96,6 +83,9 @@ export default function MenuPage() {
     return query(collection(db, 'dishes'), orderBy('totalOrders', 'desc'), limit(8));
   }, [db]);
   const { data: trendingDishes } = useCollection(trendingQuery);
+
+  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [loadingRecs, setLoadingRecs] = useState(false);
 
   useEffect(() => {
     async function getPersonalizedRecommendations() {
@@ -126,6 +116,37 @@ export default function MenuPage() {
     }
     if (mounted && allDishes && user) getPersonalizedRecommendations();
   }, [user?.uid, allDishes, db, mounted]);
+
+  const handleSeedMenu = async () => {
+    setIsSeeding(true);
+    try {
+      const response = await fetch('/menu.json');
+      const data = await response.json();
+      const batch = writeBatch(db);
+      
+      data.forEach((item: any) => {
+        const newDoc = doc(collection(db, 'dishes'));
+        batch.set(newDoc, {
+          name: item.name,
+          category: item.category,
+          price: item.price,
+          description: item.description,
+          image: item.image_url,
+          isVeg: item.isVegetarian,
+          rating: 4.5,
+          totalOrders: 0,
+          totalRevenue: 0,
+          createdAt: new Date().toISOString()
+        });
+      });
+      
+      await batch.commit();
+    } catch (e) {
+      console.error("Seeding failed", e);
+    } finally {
+      setIsSeeding(false);
+    }
+  };
 
   const filteredDishes = useMemo(() => {
     return (allDishes || []).filter(dish => {
@@ -170,7 +191,7 @@ export default function MenuPage() {
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
               <Input 
-                placeholder="Search flavors..." 
+                placeholder="Search authentic dishes..." 
                 className="pl-10 h-11 bg-muted/50 border-none rounded-2xl w-full"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -221,6 +242,24 @@ export default function MenuPage() {
       </nav>
 
       <main className="max-w-7xl mx-auto px-6 py-12 space-y-24">
+        {allDishes?.length === 0 && !dishesLoading && (
+          <div className="bg-primary/5 p-12 rounded-[3rem] border border-dashed border-primary/20 flex flex-col items-center gap-6 text-center">
+            <ChefHat className="w-20 h-20 text-primary opacity-40" />
+            <div>
+              <h2 className="text-3xl font-headline font-black mb-2">The kitchen is empty!</h2>
+              <p className="text-muted-foreground">Populate your menu with 100+ authentic Indian dishes to get started.</p>
+            </div>
+            <Button 
+              onClick={handleSeedMenu} 
+              disabled={isSeeding}
+              className="h-14 px-10 rounded-2xl font-black bg-primary text-lg shadow-xl"
+            >
+              {isSeeding ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Plus className="w-5 h-5 mr-2" />}
+              Bootstrap Authentic Menu
+            </Button>
+          </div>
+        )}
+
         {dishesLoading && (
           <div className="flex items-center justify-center gap-4 p-8 bg-primary/10 rounded-3xl animate-pulse">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -248,7 +287,7 @@ export default function MenuPage() {
 
         <section>
           <div className="flex flex-col md:flex-row justify-between items-end gap-6 mb-10">
-            <div><h2 className="text-4xl font-headline font-black">Browse Categories</h2><p className="text-muted-foreground mt-2 font-medium">Explore flavors by category.</p></div>
+            <div><h2 className="text-4xl font-headline font-black">Browse Categories</h2><p className="text-muted-foreground mt-2 font-medium">Authentic Indian flavors categorized for you.</p></div>
             <Sheet open={showFilters} onOpenChange={setShowFilters}>
               <SheetTrigger asChild>
                 <Button variant="outline" className="h-12 rounded-2xl gap-2 border-primary/20 hover:bg-primary hover:text-white transition-all font-bold"><Filter className="w-5 h-5" /> Filter Menu</Button>
@@ -299,7 +338,7 @@ export default function MenuPage() {
           <h3 className="text-3xl font-headline font-black mb-12">Full Menu</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12">
             {filteredDishes.map(dish => <FoodCard key={dish.id} food={{...dish, imageURL: dish.image}} />)}
-            {filteredDishes.length === 0 && !dishesLoading && (
+            {filteredDishes.length === 0 && !dishesLoading && allDishes?.length! > 0 && (
               <div className="col-span-full text-center py-20 opacity-40 italic font-bold">No dishes found matching your criteria.</div>
             )}
           </div>

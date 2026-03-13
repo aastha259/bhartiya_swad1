@@ -1,10 +1,11 @@
+
 {
   "entities": {
     "User": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "User",
       "type": "object",
-      "description": "Represents a user of the Bhartiya Swad platform, including both customers and administrators.",
+      "description": "Represents a user of the Bhartiya Swad platform.",
       "properties": {
         "id": { "type": "string" },
         "email": { "type": "string", "format": "email" },
@@ -17,29 +18,11 @@
       },
       "required": ["id", "email", "displayName", "role", "totalOrders", "totalMoneySpent"]
     },
-    "Restaurant": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Restaurant",
-      "type": "object",
-      "description": "Represents a restaurant partnered with the Bhartiya Swad platform.",
-      "properties": {
-        "id": { "type": "string" },
-        "name": { "type": "string" },
-        "address": { "type": "string" },
-        "phone": { "type": "string" },
-        "email": { "type": "string", "format": "email" },
-        "imageURL": { "type": "string", "format": "uri" },
-        "averageRating": { "type": "number" },
-        "totalOrders": { "type": "number" },
-        "totalRevenue": { "type": "number" }
-      },
-      "required": ["id", "name", "address", "phone", "email", "imageURL", "averageRating", "totalOrders", "totalRevenue"]
-    },
     "Dish": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Dish",
       "type": "object",
-      "description": "Represents a single food item that can be ordered.",
+      "description": "Represents an authentic Indian dish.",
       "properties": {
         "id": { "type": "string" },
         "name": { "type": "string" },
@@ -49,7 +32,6 @@
         "rating": { "type": "number" },
         "category": { "type": "string", "enum": ["Starters", "Main Course - Veg", "Main Course - Non-Veg", "Breads", "Rice & Biryani", "Street Food", "Desserts", "Beverages"] },
         "isVeg": { "type": "boolean" },
-        "restaurantId": { "type": "string" },
         "totalOrders": { "type": "number" },
         "totalRevenue": { "type": "number" }
       },
