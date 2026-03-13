@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -8,7 +7,6 @@ import {
   Search, 
   ShoppingCart, 
   ChefHat, 
-  TrendingUp, 
   Sparkles, 
   LogOut,
   Utensils,
@@ -22,11 +20,8 @@ import {
   IceCreamCone,
   Coffee,
   Filter,
-  X,
   Star,
-  Leaf,
-  LayoutDashboard,
-  User as UserIcon
+  LayoutDashboard
 } from 'lucide-react';
 import Link from 'next/link';
 import { Input } from '@/components/ui/input';
@@ -68,6 +63,7 @@ export default function MenuPage() {
   const { items, removeFromCart, totalPrice, clearCart } = useCart();
   const db = useFirestore();
   
+  const [mounted, setMounted] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   
@@ -79,6 +75,10 @@ export default function MenuPage() {
 
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [loadingRecs, setLoadingRecs] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Fetch all available foods
   const foodsQuery = useMemoFirebase(() => collection(db, 'foods'), [db]);
@@ -179,7 +179,7 @@ export default function MenuPage() {
           </Link>
 
           <div className="flex-1 max-w-xl flex gap-4">
-            {user && (
+            {mounted && user && (
               <Link href="/dashboard" className="hidden sm:flex items-center gap-2 text-sm font-bold text-muted-foreground hover:text-primary transition-colors px-3">
                 <LayoutDashboard className="w-4 h-4" />
                 Dashboard
@@ -202,7 +202,9 @@ export default function MenuPage() {
           </div>
 
           <div className="flex items-center gap-4">
-            {user ? (
+            {!mounted ? (
+              <div className="w-10 h-10" />
+            ) : user ? (
               <>
                 <Sheet>
                   <SheetTrigger asChild>
@@ -304,7 +306,7 @@ export default function MenuPage() {
         )}
 
         {/* 2. Recommended For You Section (Only if logged in) */}
-        {user && (recommendations.length > 0 || loadingRecs) && (
+        {mounted && user && (recommendations.length > 0 || loadingRecs) && (
           <section className="bg-gradient-to-br from-primary/5 to-accent/5 p-12 rounded-[3rem] border border-primary/10 relative overflow-hidden animate-in fade-in duration-1000">
             <div className="flex items-center justify-between mb-10">
               <div>
@@ -490,8 +492,8 @@ export default function MenuPage() {
           <p className="text-muted-foreground font-medium mb-8 max-w-md mx-auto">Bringing the authentic taste of Indian heritage to your modern lifestyle.</p>
           <div className="flex justify-center gap-8 text-sm font-bold text-muted-foreground">
             <Link href="/menu" className="hover:text-primary">Menu</Link>
-            {user && <Link href="/dashboard" className="hover:text-primary">Dashboard</Link>}
-            {!user && <Link href="/login" className="hover:text-primary">Login</Link>}
+            {mounted && user && <Link href="/dashboard" className="hover:text-primary">Dashboard</Link>}
+            {mounted && !user && <Link href="/login" className="hover:text-primary">Login</Link>}
             <Link href="#" className="hover:text-primary">Privacy Policy</Link>
             <Link href="#" className="hover:text-primary">Terms of Service</Link>
           </div>

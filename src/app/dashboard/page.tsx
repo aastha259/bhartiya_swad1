@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -37,8 +36,13 @@ export default function DashboardPage() {
   const { items, removeFromCart, totalPrice, clearCart } = useCart();
   const db = useFirestore();
 
+  const [mounted, setMounted] = useState(false);
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [loadingRecs, setLoadingRecs] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Fetch all foods for context
   const foodsQuery = useMemoFirebase(() => collection(db, 'foods'), [db]);
@@ -51,8 +55,8 @@ export default function DashboardPage() {
   const { data: trendingFoods } = useCollection(trendingQuery);
 
   useEffect(() => {
-    if (!user) router.push('/login');
-  }, [user, router]);
+    if (mounted && !user) router.push('/login');
+  }, [user, router, mounted]);
 
   // AI Recommendations
   useEffect(() => {
@@ -104,7 +108,7 @@ export default function DashboardPage() {
     if (allFoods) getPersonalizedRecommendations();
   }, [user?.uid, allFoods, db]);
 
-  if (!user) return null;
+  if (!mounted || !user) return null;
 
   return (
     <div className="min-h-screen bg-background">
