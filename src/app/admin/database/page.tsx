@@ -33,24 +33,22 @@ export const CATEGORIES_DATA = [
 ];
 
 const DISH_TEMPLATES: Record<string, string[]> = {
-  'Pizza': ['Margherita Pizza', 'Farmhouse Pizza', 'Paneer Tikka Pizza', 'Veggie Delight Pizza', 'Cheese Burst Pizza', 'Classic Veg Pizza', 'Double Cheese Pizza', 'Corn & Cheese Pizza', 'Capsicum Special Pizza', 'Mushroom Lovers Pizza', 'Garden Fresh Pizza', 'Spicy Paneer Pizza', 'Ultimate Veg Pizza', 'Double Paneer Pizza', 'Saffron Special Pizza'],
-  'Biryani': ['Hyderabadi Veg Biryani', 'Paneer Dum Biryani', 'Mushroom Biryani', 'Kolkata Style Veg Biryani', 'Lucknowi Tarkari Biryani', 'Subz-e-Biryani', 'Veg Pulao Special', 'Jackfruit Biryani', 'Soya Biryani', 'Mixed Bean Biryani', 'Kashmiri Veg Biryani', 'Ambur Veg Biryani', 'Thalassery Veg Biryani', 'Sindhi Veg Biryani', 'Malabar Veg Biryani'],
-  'North Indian': ['Paneer Butter Masala', 'Dal Makhani', 'Shahi Paneer', 'Malai Kofta', 'Mix Veg', 'Palak Paneer', 'Chole Masala', 'Kadai Paneer', 'Jeera Aloo', 'Aloo Gobi', 'Baingan Bharta', 'Navratan Korma', 'Dum Aloo', 'Matar Paneer', 'Kadai Vegetable'],
-  'South Indian': ['Masala Dosa', 'Idli Sambhar', 'Medu Vada', 'Uttapam', 'Rava Dosa', 'Onion Dosa', 'Paper Plain Dosa', 'Ghee Roast Dosa', 'Paniyaram', 'Lemon Rice', 'Curd Rice', 'Appam', 'Upma', 'Ven Pongal', 'Bisi Bele Bath'],
-  'Chinese': ['Veg Hakka Noodles', 'Veg Manchurian', 'Schezwan Noodles', 'Veg Fried Rice', 'Chili Paneer', 'Honey Chili Potato', 'Veg Spring Rolls', 'Crispy Corn', 'Veg Momos', 'Chowmein Special', 'Gobi Manchurian', 'Mushroom Chili', 'Baby Corn Chili', 'Schezwan Fried Rice', 'Singapuri Noodles'],
-  'Beverages': ['Cold Coffee', 'Mango Shake', 'Chocolate Shake', 'Sweet Lassi', 'Masala Chai', 'Mojito', 'Lemon Soda', 'Fresh Lime Soda', 'Iced Tea', 'Strawberry Smoothie', 'Vanilla Milkshake', 'Oreo Shake', 'Blue Lagoon', 'Virgin Mary', 'Cold Drink'],
-  'Desserts': ['Gulab Jamun', 'Rasmalai', 'Chocolate Lava Cake', 'Brownie with Ice Cream', 'Kheer', 'Gajar ka Halwa', 'Pastry', 'Cupcake', 'Waffles', 'Kulfi', 'Jalebi', 'Rabri', 'Rasgulla', 'Mysore Pak', 'Barfi'],
+  'Pizza': ['Margherita Pizza', 'Farmhouse Pizza', 'Paneer Tikka Pizza', 'Veggie Delight Pizza', 'Cheese Burst Pizza', 'Classic Veg Pizza', 'Double Cheese Pizza', 'Corn & Cheese Pizza', 'Capsicum Special Pizza', 'Mushroom Lovers Pizza', 'Garden Fresh Pizza', 'Spicy Paneer Pizza', 'Ultimate Veg Pizza', 'Double Paneer Pizza', 'Tandoori Pizza', 'Mexican Green Wave', 'Peppy Paneer Pizza', 'Veg Extravaganza'],
+  'Biryani': ['Hyderabadi Veg Biryani', 'Paneer Dum Biryani', 'Mushroom Biryani', 'Kolkata Style Veg Biryani', 'Lucknowi Tarkari Biryani', 'Subz-e-Biryani', 'Veg Pulao Special', 'Jackfruit Biryani', 'Soya Biryani', 'Mixed Bean Biryani', 'Kashmiri Veg Biryani', 'Ambur Veg Biryani', 'Thalassery Veg Biryani', 'Sindhi Veg Biryani', 'Malabar Veg Biryani', 'Handi Biryani', 'Shahi Veg Biryani'],
+  'North Indian': ['Paneer Butter Masala', 'Dal Makhani', 'Shahi Paneer', 'Malai Kofta', 'Mix Veg', 'Palak Paneer', 'Chole Masala', 'Kadai Paneer', 'Jeera Aloo', 'Aloo Gobi', 'Baingan Bharta', 'Navratan Korma', 'Dum Aloo', 'Matar Paneer', 'Kadai Vegetable', 'Bhindi Masala', 'Methi Matar Malai'],
+  'South Indian': ['Masala Dosa', 'Idli Sambhar', 'Medu Vada', 'Uttapam', 'Rava Dosa', 'Onion Dosa', 'Paper Plain Dosa', 'Ghee Roast Dosa', 'Paniyaram', 'Lemon Rice', 'Curd Rice', 'Appam', 'Upma', 'Ven Pongal', 'Bisi Bele Bath', 'Mysore Masala Dosa', 'Set Dosa'],
+  'Chinese': ['Veg Hakka Noodles', 'Veg Manchurian', 'Schezwan Noodles', 'Veg Fried Rice', 'Chili Paneer', 'Honey Chili Potato', 'Veg Spring Rolls', 'Crispy Corn', 'Veg Momos', 'Chowmein Special', 'Gobi Manchurian', 'Mushroom Chili', 'Baby Corn Chili', 'Schezwan Fried Rice', 'Singapuri Noodles', 'American Chopsuey', 'Kimchi Salad'],
+  'Beverages': ['Cold Coffee', 'Mango Shake', 'Chocolate Shake', 'Sweet Lassi', 'Masala Chai', 'Mojito', 'Lemon Soda', 'Fresh Lime Soda', 'Iced Tea', 'Strawberry Smoothie', 'Vanilla Milkshake', 'Oreo Shake', 'Blue Lagoon', 'Virgin Mary', 'Cold Drink', 'Butter Milk', 'Fruit Punch'],
+  'Desserts': ['Gulab Jamun', 'Rasmalai', 'Chocolate Lava Cake', 'Brownie with Ice Cream', 'Kheer', 'Gajar ka Halwa', 'Pastry', 'Cupcake', 'Waffles', 'Kulfi', 'Jalebi', 'Rabri', 'Rasgulla', 'Mysore Pak', 'Barfi', 'Peda', 'Sandesh'],
+  'Street Food': ['Pani Puri', 'Samosa Chat', 'Aloo Tikki', 'Pav Bhaji', 'Vada Pav', 'Bhel Puri', 'Dahi Puri', 'Papdi Chat', 'Kachori', 'Dhokla', 'Khandvi', 'Misal Pav', 'Dabeli', 'Mirchi Bajji', 'Bread Pakora', 'Eggless Omelette', 'Sabudana Vada'],
+  'Burgers': ['Classic Veg Burger', 'Aloo Tikki Burger', 'Paneer Supreme Burger', 'Cheese Lava Burger', 'Spicy Paneer Burger', 'Double Decker Veg', 'Mushroom Burger', 'Crispy Corn Burger', 'Urban Desi Burger', 'Junior Veg Burger', 'Monster Veg Burger', 'BBQ Veg Burger', 'Tandoori Burger', 'Maharaja Veg Burger', 'Garden Burger', 'Cheese Chiller Burger', 'Salsa Burger'],
 };
 
-export async function seedMenuData(db: any, toast: any) {
+export async function seedMenuData(db: any, toast?: any) {
   let totalCreated = 0;
   for (const cat of CATEGORIES_DATA) {
-    const templates = DISH_TEMPLATES[cat.name] || [
-      `Classic ${cat.name}`, `Special ${cat.name}`, `Spicy ${cat.name}`, `Gourmet ${cat.name}`, 
-      `Chef's ${cat.name}`, `Royal ${cat.name}`, `Supreme ${cat.name}`, `Garden ${cat.name}`,
-      `Double ${cat.name}`, `Premium ${cat.name}`, `Deluxe ${cat.name}`, `Signature ${cat.name}`,
-      `Traditional ${cat.name}`, `Elite ${cat.name}`, `Urban ${cat.name}`
-    ];
+    // Generate at least 17 items per category to reach 250+ (15 * 17 = 255)
+    const templates = DISH_TEMPLATES[cat.name] || Array.from({ length: 17 }, (_, i) => `${cat.name} Special ${i + 1}`);
 
     for (const name of templates) {
       const q = query(collection(db, 'dishes'), where('name', '==', name));
@@ -64,7 +62,7 @@ export async function seedMenuData(db: any, toast: any) {
           description: `Indulge in our signature ${name}. Prepared with the finest ingredients and traditional recipes to ensure an authentic taste experience.`,
           image: `https://picsum.photos/seed/${name.replace(/\s/g, '-')}/800/600`,
           rating: parseFloat((4.0 + Math.random() * 0.9).toFixed(1)),
-          isVeg: !name.toLowerCase().includes('chicken') && !name.toLowerCase().includes('mutton'),
+          isVeg: true, // Prototype defaults to Veg for Bhartiya Swad unless specified
           createdAt: new Date().toISOString(),
           totalOrders: Math.floor(Math.random() * 500),
           totalRevenue: 0
@@ -135,7 +133,7 @@ export default function AdminDatabasePage() {
             <Database className="w-10 h-10 text-primary" />
             Dish Repository
           </h1>
-          <p className="text-muted-foreground font-medium">Manage and seed your 200+ dish database here.</p>
+          <p className="text-muted-foreground font-medium">Manage and seed your 250+ dish database here.</p>
         </div>
         <div className="flex items-center gap-4 w-full md:w-auto">
           <Button 
@@ -145,7 +143,7 @@ export default function AdminDatabasePage() {
             className="rounded-xl border-primary text-primary hover:bg-primary/5 font-bold h-11"
           >
             {isSeeding ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
-            Sync 200+ Dishes
+            Sync 250+ Dishes
           </Button>
           <div className="relative w-full md:w-64">
             <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
