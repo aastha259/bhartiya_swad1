@@ -1,46 +1,13 @@
-rules_version = '2';
 
-/**
- * Bhartiya Swad - Security Rules Architecture
- *
- * Core Philosophy:
- * This ruleset implements a robust, role-based access control system tailored for an advanced 
- * admin dashboard and food ordering platform. It uses a "Defense in Depth" strategy where 
- * authorization is verified through both identity and structural existence.
- *
- * Data Structure:
- * - Public Resources: /restaurants, /categories, and /foods are globally readable to facilitate 
- *   browsing, but strictly writable only by verified administrators.
- * - Private User Data: /users and /orders are secured via path-based ownership or 
- *   internal document fields (denormalization).
- * - Administrative Control: Global admin privileges are determined by the existence of 
- *   a UID in the /admin_roles collection or a hardcoded bootstrap email.
- *
- * Key Security Decisions:
- * - Admin Independence: Admin checks utilize the `exists()` function on a dedicated 
- *   /admin_roles path, and a bootstrap check for the primary admin email.
- * - Denormalization for Auth: Ownership fields (like userId) are strictly enforced in 
- *   the Order and User collections to allow for O(1) security checks without recursive lookups.
- * - Hierarchy-Based Permissions: Access to subcollections (like /orderItems) is inherited 
- *   from the parent /orders document logic for consistency and performance.
- */
+rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- Helper Functions ---
-
-    /**
-     * @description Checks if the request is from a signed-in user.
-     */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /**
-     * @description Checks if the user has a document in the admin_roles collection
-     * or matches the bootstrap admin email.
-     */
     function isAdmin() {
       return isSignedIn() && (
         exists(/databases/$(database)/documents/admin_roles/$(request.auth.uid)) ||
@@ -48,18 +15,10 @@ service cloud.firestore {
       );
     }
 
-    /**
-     * @description Checks if the authenticated user's UID matches the provided userId.
-     */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // --- Collection Rules ---
-
-    /**
-     * @description User profiles containing roles and customer insights.
-     */
     match /users/{userId} {
       allow get, list: if isOwner(userId) || isAdmin();
       allow create: if isOwner(userId) && request.resource.data.id == userId;
@@ -67,41 +26,26 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    /**
-     * @description Secure collection where document existence grants admin privileges.
-     */
     match /admin_roles/{adminId} {
       allow get, list: if isAdmin();
       allow create, update, delete: if isAdmin() || (isSignedIn() && request.auth.token.email == 'xyz@admin.com');
     }
 
-    /**
-     * @description Publicly viewable restaurant listings.
-     */
     match /restaurants/{restaurantId} {
       allow get, list: if true;
       allow create, update, delete: if isAdmin();
     }
 
-    /**
-     * @description Food categories for site navigation.
-     */
     match /categories/{categoryId} {
       allow get, list: if true;
       allow create, update, delete: if isAdmin();
     }
 
-    /**
-     * @description Individual food items, prices, and trending status.
-     */
-    match /foods/{foodId} {
+    match /dishes/{dishId} {
       allow get, list: if true;
       allow create, update, delete: if isAdmin();
     }
 
-    /**
-     * @description Customer orders. Users manage their own; admins monitor all.
-     */
     match /orders/{orderId} {
       allow get: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
       allow list: if (isSignedIn() && (isAdmin() || (resource == null || resource.data.userId == request.auth.uid)));

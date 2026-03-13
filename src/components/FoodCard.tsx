@@ -19,7 +19,8 @@ interface FoodCardProps {
     price: number;
     category: string;
     rating: number;
-    imageURL: string;
+    imageURL?: string;
+    image?: string;
     trending?: boolean;
     description?: string;
     isVeg?: boolean;
@@ -33,29 +34,26 @@ export default function FoodCard({ food }: FoodCardProps) {
 
   const handleOrderNow = () => {
     if (!user) {
-      // Preserve the current path to return to after login
-      router.push('/login?callbackUrl=/menu');
+      router.push(`/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`);
       return;
     }
-    addToCart(food);
+    addToCart({ ...food, imageURL: food.imageURL || food.image });
   };
+
+  const displayImage = food.imageURL || food.image || `https://picsum.photos/seed/${food.id}/800/600`;
 
   return (
     <div className="group h-full">
       <Card className="relative h-full flex flex-col overflow-hidden transition-all duration-500 bg-white border border-border/40 shadow-sm hover:shadow-2xl hover:-translate-y-2 rounded-[2.5rem]">
-        {/* Image Container */}
         <div className="relative w-full aspect-[4/3] overflow-hidden bg-muted m-3 rounded-[2rem] shadow-md">
           <Image
-            src={food.imageURL}
+            src={displayImage}
             alt={food.name}
             fill
             className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+            data-ai-hint={food.category}
           />
-          
-          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-60" />
-          
-          {/* Badges Overlay */}
           <div className="absolute top-4 left-4 right-4 flex justify-between items-start pointer-events-none">
             <div className="flex flex-col gap-2">
               {food.trending && (
@@ -77,7 +75,6 @@ export default function FoodCard({ food }: FoodCardProps) {
           </div>
         </div>
 
-        {/* Content Section */}
         <div className="px-6 pb-6 flex-1 flex flex-col">
           <div className="mb-4">
             <p className="text-[9px] font-black text-primary uppercase tracking-[0.25em] mb-1">
@@ -87,25 +84,15 @@ export default function FoodCard({ food }: FoodCardProps) {
               {food.name}
             </h3>
           </div>
-          
-          {food.description && (
-            <p className="text-xs text-muted-foreground line-clamp-2 mb-6 font-medium leading-relaxed opacity-80">
-              {food.description}
-            </p>
-          )}
-
-          {/* Footer Section */}
           <div className="mt-auto pt-4 border-t border-dashed border-muted flex items-center justify-between gap-4">
             <div className="flex flex-col">
               <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-0.5 opacity-60">Price</span>
               <span className="text-2xl font-headline font-black text-foreground">₹{food.price}</span>
             </div>
-            
             <Button 
               onClick={handleOrderNow}
-              className="flex-1 rounded-2xl h-12 bg-primary hover:bg-primary/90 text-white font-black text-sm shadow-lg shadow-primary/20 transition-all hover:scale-[1.05] active:scale-95 group/btn"
+              className="flex-1 rounded-2xl h-12 bg-primary hover:bg-primary/90 text-white font-black text-sm shadow-lg transition-all hover:scale-[1.05]"
             >
-              <ShoppingCart className="w-4 h-4 mr-2" />
               Order Now
             </Button>
           </div>
