@@ -46,14 +46,21 @@ import { collection, query, orderBy, limit, writeBatch, getDocs, doc } from 'fir
 import { cn } from '@/lib/utils';
 
 const categoriesConfig = [
-  { name: 'Starters', icon: Flame },
-  { name: 'Main Course - Veg', icon: Leaf },
-  { name: 'Main Course - Non-Veg', icon: Beef },
-  { name: 'Breads', icon: CircleDot },
-  { name: 'Rice & Biryani', icon: Soup },
-  { name: 'Street Food', icon: Store },
-  { name: 'Desserts', icon: IceCreamCone },
-  { name: 'Beverages', icon: Coffee },
+  { name: 'PIZZA', icon: CircleDot },
+  { name: 'BURGERS', icon: Beef },
+  { name: 'BIRYANI', icon: Soup },
+  { name: 'NORTH INDIAN', icon: Leaf },
+  { name: 'SOUTH INDIAN', icon: CircleDot },
+  { name: 'CHINESE', icon: Flame },
+  { name: 'FAST FOOD', icon: Store },
+  { name: 'STREET FOOD', icon: Store },
+  { name: 'ROLL&WRAPS', icon: Flame },
+  { name: 'SANDWICHES', icon: Coffee },
+  { name: 'PASTA', icon: Soup },
+  { name: 'SALADS', icon: Leaf },
+  { name: 'DESSERTS', icon: IceCreamCone },
+  { name: 'ICE CREAM', icon: IceCreamCone },
+  { name: 'BEVERAGES', icon: Coffee },
 ];
 
 export default function MenuPage() {
@@ -67,7 +74,7 @@ export default function MenuPage() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   
   const [isVegOnly, setIsVegOnly] = useState<boolean | null>(null);
-  const [maxPrice, setMaxPrice] = useState(1000);
+  const [maxPrice, setMaxPrice] = useState(800);
   const [minRating, setMinRating] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
@@ -131,9 +138,9 @@ export default function MenuPage() {
           category: item.category,
           price: item.price,
           description: item.description,
-          image: item.image_url,
-          isVeg: item.isVegetarian,
-          rating: 4.5,
+          image: item.image,
+          isVeg: true,
+          rating: item.rating || 4.5,
           totalOrders: 0,
           totalRevenue: 0,
           createdAt: new Date().toISOString()
@@ -162,7 +169,7 @@ export default function MenuPage() {
 
   const resetFilters = () => {
     setIsVegOnly(null);
-    setMaxPrice(1000);
+    setMaxPrice(800);
     setMinRating(0);
     setSearch('');
     setSelectedCategory('All');
@@ -247,7 +254,7 @@ export default function MenuPage() {
             <ChefHat className="w-20 h-20 text-primary opacity-40" />
             <div>
               <h2 className="text-3xl font-headline font-black mb-2">The kitchen is empty!</h2>
-              <p className="text-muted-foreground">Populate your menu with 100+ authentic Indian dishes to get started.</p>
+              <p className="text-muted-foreground">Populate your menu with 120 authentic dishes to get started.</p>
             </div>
             <Button 
               onClick={handleSeedMenu} 
@@ -255,7 +262,7 @@ export default function MenuPage() {
               className="h-14 px-10 rounded-2xl font-black bg-primary text-lg shadow-xl"
             >
               {isSeeding ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Plus className="w-5 h-5 mr-2" />}
-              Bootstrap Authentic Menu
+              Import 120 Authentic Dishes
             </Button>
           </div>
         )}
@@ -305,7 +312,7 @@ export default function MenuPage() {
                   </div>
                   <div className="space-y-6">
                     <div className="flex justify-between items-center"><label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Max Price</label><span className="font-headline font-black text-2xl text-primary">₹{maxPrice}</span></div>
-                    <Slider value={[maxPrice]} max={1000} step={10} onValueChange={([val]) => setMaxPrice(val)} />
+                    <Slider value={[maxPrice]} max={800} step={10} onValueChange={([val]) => setMaxPrice(val)} />
                   </div>
                 </div>
                 <SheetFooter className="flex-col gap-4 pt-8 border-t mt-auto">

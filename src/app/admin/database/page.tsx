@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Trash2, Plus, Search, Database, Loader2, RefreshCw, UploadCloud } from 'lucide-react';
+import { Trash2, Plus, Search, Database, Loader2, UploadCloud } from 'lucide-react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, doc, deleteDoc, addDoc, query, where, getDocs, writeBatch } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
@@ -15,14 +15,21 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 
 export const MENU_CATEGORIES = [
-  'Starters',
-  'Main Course - Veg',
-  'Main Course - Non-Veg',
-  'Breads',
-  'Rice & Biryani',
-  'Street Food',
-  'Desserts',
-  'Beverages'
+  'PIZZA',
+  'BURGERS',
+  'BIRYANI',
+  'NORTH INDIAN',
+  'SOUTH INDIAN',
+  'CHINESE',
+  'FAST FOOD',
+  'STREET FOOD',
+  'ROLL&WRAPS',
+  'SANDWICHES',
+  'PASTA',
+  'SALADS',
+  'DESSERTS',
+  'ICE CREAM',
+  'BEVERAGES'
 ];
 
 export default function AdminDatabasePage() {
@@ -45,7 +52,6 @@ export default function AdminDatabasePage() {
   const handleImportAuthenticMenu = async () => {
     setIsSeeding(true);
     try {
-      // Fetch the menu.json from the root
       const response = await fetch('/menu.json');
       const authenticMenu = await response.json();
       
@@ -53,7 +59,6 @@ export default function AdminDatabasePage() {
       let addedCount = 0;
 
       for (const item of authenticMenu) {
-        // Check if dish already exists by name
         const q = query(collection(db, 'dishes'), where('name', '==', item.name));
         const snap = await getDocs(q);
         
@@ -64,9 +69,9 @@ export default function AdminDatabasePage() {
             category: item.category,
             price: item.price,
             description: item.description,
-            image: item.image_url,
-            rating: 4.5 + (Math.random() * 0.5),
-            isVeg: item.isVegetarian,
+            image: item.image,
+            rating: item.rating || 4.5,
+            isVeg: true, // Defaulting to true as per previous templates
             createdAt: new Date().toISOString(),
             totalOrders: 0,
             totalRevenue: 0
@@ -122,7 +127,7 @@ export default function AdminDatabasePage() {
             className="rounded-xl border-primary text-primary hover:bg-primary/5 font-bold h-11"
           >
             {isSeeding ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <UploadCloud className="w-4 h-4 mr-2" />}
-            Import Authentic Menu
+            Import 120 Authentic Dishes
           </Button>
           <div className="relative w-full md:w-64">
             <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
