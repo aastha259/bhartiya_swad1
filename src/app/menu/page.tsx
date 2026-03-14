@@ -46,20 +46,14 @@ import { collection, query, orderBy, limit, writeBatch, getDocs, doc } from 'fir
 import { cn } from '@/lib/utils';
 
 const categoriesConfig = [
-  { name: 'PIZZA', icon: CircleDot },
+  { name: 'PIZZAS', icon: CircleDot },
   { name: 'BURGERS', icon: Beef },
-  { name: 'BIRYANI', icon: Soup },
-  { name: 'NORTH INDIAN', icon: Leaf },
-  { name: 'SOUTH INDIAN', icon: CircleDot },
+  { name: 'NORTH_INDIAN', icon: Leaf },
+  { name: 'SOUTH_INDIAN', icon: CircleDot },
   { name: 'CHINESE', icon: Flame },
-  { name: 'FAST FOOD', icon: Store },
-  { name: 'STREET FOOD', icon: Store },
-  { name: 'ROLL&WRAPS', icon: Flame },
-  { name: 'SANDWICHES', icon: Coffee },
-  { name: 'PASTA', icon: Soup },
-  { name: 'SALADS', icon: Leaf },
+  { name: 'STREET_FOOD', icon: Store },
   { name: 'DESSERTS', icon: IceCreamCone },
-  { name: 'ICE CREAM', icon: IceCreamCone },
+  { name: 'ICE_CREAM', icon: IceCreamCone },
   { name: 'BEVERAGES', icon: Coffee },
 ];
 
@@ -123,37 +117,6 @@ export default function MenuPage() {
     }
     if (mounted && allDishes && user) getPersonalizedRecommendations();
   }, [user?.uid, allDishes, db, mounted]);
-
-  const handleSeedMenu = async () => {
-    setIsSeeding(true);
-    try {
-      const response = await fetch('/menu.json');
-      const data = await response.json();
-      const batch = writeBatch(db);
-      
-      data.forEach((item: any) => {
-        const newDoc = doc(collection(db, 'dishes'));
-        batch.set(newDoc, {
-          name: item.name,
-          category: item.category,
-          price: item.price,
-          description: item.description,
-          image: item.image,
-          isVeg: true,
-          rating: item.rating || 4.5,
-          totalOrders: 0,
-          totalRevenue: 0,
-          createdAt: new Date().toISOString()
-        });
-      });
-      
-      await batch.commit();
-    } catch (e) {
-      console.error("Seeding failed", e);
-    } finally {
-      setIsSeeding(false);
-    }
-  };
 
   const filteredDishes = useMemo(() => {
     return (allDishes || []).filter(dish => {
@@ -253,17 +216,12 @@ export default function MenuPage() {
           <div className="bg-primary/5 p-12 rounded-[3rem] border border-dashed border-primary/20 flex flex-col items-center gap-6 text-center">
             <ChefHat className="w-20 h-20 text-primary opacity-40" />
             <div>
-              <h2 className="text-3xl font-headline font-black mb-2">The kitchen is empty!</h2>
-              <p className="text-muted-foreground">Populate your menu with 120 authentic dishes to get started.</p>
+              <h2 className="text-3xl font-headline font-black mb-2 text-foreground">The kitchen is empty!</h2>
+              <p className="text-muted-foreground">Visit the Admin Hub to bootstrap your 500+ dish repository.</p>
             </div>
-            <Button 
-              onClick={handleSeedMenu} 
-              disabled={isSeeding}
-              className="h-14 px-10 rounded-2xl font-black bg-primary text-lg shadow-xl"
-            >
-              {isSeeding ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Plus className="w-5 h-5 mr-2" />}
-              Import 120 Authentic Dishes
-            </Button>
+            <Link href="/admin/database">
+              <Button className="h-14 px-10 rounded-2xl font-black bg-primary text-lg shadow-xl">Go to Admin Hub</Button>
+            </Link>
           </div>
         )}
 
@@ -294,7 +252,7 @@ export default function MenuPage() {
 
         <section>
           <div className="flex flex-col md:flex-row justify-between items-end gap-6 mb-10">
-            <div><h2 className="text-4xl font-headline font-black">Browse Categories</h2><p className="text-muted-foreground mt-2 font-medium">Authentic Indian flavors categorized for you.</p></div>
+            <div><h2 className="text-4xl font-headline font-black text-foreground">Browse Categories</h2><p className="text-muted-foreground mt-2 font-medium">Authentic Indian flavors categorized for you.</p></div>
             <Sheet open={showFilters} onOpenChange={setShowFilters}>
               <SheetTrigger asChild>
                 <Button variant="outline" className="h-12 rounded-2xl gap-2 border-primary/20 hover:bg-primary hover:text-white transition-all font-bold"><Filter className="w-5 h-5" /> Filter Menu</Button>
@@ -324,25 +282,25 @@ export default function MenuPage() {
           </div>
 
           <div className="flex gap-8 overflow-x-auto pb-10 no-scrollbar snap-x">
-            <div onClick={() => setSelectedCategory('All')} className={`flex-shrink-0 w-36 snap-start cursor-pointer group transition-all duration-500 ${selectedCategory === 'All' ? 'scale-110' : ''}`}>
+            <div onClick={() => setSelectedCategory('All')} className={`flex-shrink-0 w-40 snap-start cursor-pointer group transition-all duration-500 ${selectedCategory === 'All' ? 'scale-110' : ''}`}>
               <div className={`aspect-square rounded-[2.5rem] flex items-center justify-center border-4 transition-all duration-500 ${selectedCategory === 'All' ? 'border-primary bg-primary shadow-2xl' : 'border-white bg-white shadow-md'}`}>
                 <Utensils className={`w-12 h-12 transition-colors duration-500 ${selectedCategory === 'All' ? 'text-white' : 'text-primary'}`} />
               </div>
-              <p className={`text-center mt-4 font-black text-sm uppercase ${selectedCategory === 'All' ? 'text-primary' : 'text-muted-foreground'}`}>All</p>
+              <p className={`text-center mt-4 font-black text-xs uppercase tracking-widest ${selectedCategory === 'All' ? 'text-primary' : 'text-muted-foreground'}`}>All</p>
             </div>
             {categoriesConfig.map((cat) => (
-              <div key={cat.name} onClick={() => setSelectedCategory(cat.name)} className={`flex-shrink-0 w-36 snap-start cursor-pointer group transition-all duration-500 ${selectedCategory === cat.name ? 'scale-110' : ''}`}>
+              <div key={cat.name} onClick={() => setSelectedCategory(cat.name)} className={`flex-shrink-0 w-40 snap-start cursor-pointer group transition-all duration-500 ${selectedCategory === cat.name ? 'scale-110' : ''}`}>
                 <div className={`relative aspect-square rounded-[2.5rem] overflow-hidden border-4 transition-all duration-500 shadow-md ${selectedCategory === cat.name ? 'border-primary shadow-2xl' : 'border-white bg-white'}`}>
                   <div className="absolute inset-0 flex items-center justify-center bg-primary/5"><cat.icon className={cn("w-12 h-12", selectedCategory === cat.name ? "text-primary scale-110" : "text-muted-foreground")} /></div>
                 </div>
-                <p className={`text-center mt-4 font-black text-sm uppercase ${selectedCategory === cat.name ? 'text-primary' : 'text-muted-foreground'}`}>{cat.name}</p>
+                <p className={`text-center mt-4 font-black text-xs uppercase tracking-widest ${selectedCategory === cat.name ? 'text-primary' : 'text-muted-foreground'}`}>{cat.name.replace('_', ' ')}</p>
               </div>
             ))}
           </div>
         </section>
 
         <section id="full-menu" className="pt-12 border-t border-dashed">
-          <h3 className="text-3xl font-headline font-black mb-12">Full Menu</h3>
+          <h3 className="text-3xl font-headline font-black mb-12 text-foreground">Full Menu</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12">
             {filteredDishes.map(dish => <FoodCard key={dish.id} food={{...dish, imageURL: dish.image}} />)}
             {filteredDishes.length === 0 && !dishesLoading && allDishes?.length! > 0 && (

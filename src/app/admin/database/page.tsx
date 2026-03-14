@@ -6,29 +6,23 @@ import { Card } from '@/components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Trash2, Plus, Search, Database, Loader2, UploadCloud } from 'lucide-react';
+import { Trash2, Plus, Search, Database, Loader2, UploadCloud, Flame, Sparkles } from 'lucide-react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, doc, deleteDoc, addDoc, query, where, getDocs, writeBatch } from 'firebase/firestore';
+import { collection, doc, deleteDoc, addDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 
 export const MENU_CATEGORIES = [
-  'PIZZA',
+  'PIZZAS',
   'BURGERS',
-  'BIRYANI',
-  'NORTH INDIAN',
-  'SOUTH INDIAN',
+  'NORTH_INDIAN',
+  'SOUTH_INDIAN',
   'CHINESE',
-  'FAST FOOD',
-  'STREET FOOD',
-  'ROLL&WRAPS',
-  'SANDWICHES',
-  'PASTA',
-  'SALADS',
+  'STREET_FOOD',
   'DESSERTS',
-  'ICE CREAM',
+  'ICE_CREAM',
   'BEVERAGES'
 ];
 
@@ -49,41 +43,108 @@ export default function AdminDatabasePage() {
     }
   };
 
-  const handleImportAuthenticMenu = async () => {
+  const handleMegaSeed500 = async () => {
     setIsSeeding(true);
+    toast({ title: "Seeding Started", description: "Generating 500+ unique dishes..." });
+    
     try {
-      const response = await fetch('/menu.json');
-      const authenticMenu = await response.json();
-      
-      const batch = writeBatch(db);
-      let addedCount = 0;
-
-      for (const item of authenticMenu) {
-        const q = query(collection(db, 'dishes'), where('name', '==', item.name));
-        const snap = await getDocs(q);
-        
-        if (snap.empty) {
-          const newDocRef = doc(collection(db, 'dishes'));
-          batch.set(newDocRef, {
-            name: item.name,
-            category: item.category,
-            price: item.price,
-            description: item.description,
-            image: item.image,
-            rating: item.rating || 4.5,
-            isVeg: true, // Defaulting to true as per previous templates
-            createdAt: new Date().toISOString(),
-            totalOrders: 0,
-            totalRevenue: 0
-          });
-          addedCount++;
+      const templates: Record<string, { count: number; prefixes: string[]; items: string[]; keywords: string[] }> = {
+        PIZZAS: {
+          count: 70,
+          prefixes: ['Artisanal', 'Classic', 'Double Cheese', 'Spicy', 'Tandoori', 'Peri Peri', 'Garden', 'Gourmet'],
+          items: ['Margherita', 'Paneer Tikka', 'Veggie Delight', 'Farmhouse', 'Mexican Green Wave', 'Cheese N Corn', 'Mushroom Special'],
+          keywords: ['pizza', 'cheese']
+        },
+        BURGERS: {
+          count: 70,
+          prefixes: ['Maharaja', 'Spicy', 'Crispy', 'Supreme', 'Giant', 'Zesty', 'Grilled'],
+          items: ['Veggie Burger', 'Aloo Tikki', 'Paneer Burger', 'Cheese Lava', 'Mexican Burger', 'Schezwan Burger'],
+          keywords: ['burger', 'sandwich']
+        },
+        NORTH_INDIAN: {
+          count: 90,
+          prefixes: ['Shahi', 'Kadai', 'Butter', 'Dal', 'Paneer', 'Dum', 'Malai', 'Special'],
+          items: ['Makhani', 'Masala', 'Kofta', 'Tadka', 'Gravy', 'Do Pyaza', 'Pasanda'],
+          keywords: ['curry', 'indian-food']
+        },
+        SOUTH_INDIAN: {
+          count: 90,
+          prefixes: ['Mysore', 'Rava', 'Masala', 'Ghee Roast', 'Onion', 'Gunpowder', 'Paper'],
+          items: ['Dosa', 'Idli', 'Uttapam', 'Vada', 'Appam', 'Paniyaram'],
+          keywords: ['dosa', 'idli']
+        },
+        CHINESE: {
+          count: 70,
+          prefixes: ['Schezwan', 'Hakka', 'Chilli', 'Manchurian', 'Ginger', 'Garlic', 'Dragon'],
+          items: ['Noodles', 'Fried Rice', 'Momos', 'Spring Rolls', 'Dry Fry'],
+          keywords: ['chinese-food', 'noodles']
+        },
+        STREET_FOOD: {
+          count: 90,
+          prefixes: ['Bombay', 'Delhi', 'Special', 'Masala', 'Tangy', 'Crunchy', 'Street Style'],
+          items: ['Pav Bhaji', 'Vada Pav', 'Pani Puri', 'Bhel Puri', 'Samosa Chaat', 'Aloo Tikki'],
+          keywords: ['chaat', 'street-food']
+        },
+        DESSERTS: {
+          count: 40,
+          prefixes: ['Sweet', 'Royal', 'Hot', 'Gulab', 'Rich', 'Kesari'],
+          items: ['Jamun', 'Rasmalai', 'Halwa', 'Ladoo', 'Jalebi', 'Rabri'],
+          keywords: ['dessert', 'indian-sweets']
+        },
+        ICE_CREAM: {
+          count: 35,
+          prefixes: ['Belgian', 'Natural', 'Creamy', 'Exotic', 'Fruit'],
+          items: ['Chocolate', 'Vanilla', 'Mango', 'Butterscotch', 'Pista', 'Strawberry'],
+          keywords: ['ice-cream', 'scoop']
+        },
+        BEVERAGES: {
+          count: 90,
+          prefixes: ['Fresh', 'Chilled', 'Masala', 'Sweet', 'Zesty', 'Organic'],
+          items: ['Lassi', 'Coffee', 'Tea', 'Shake', 'Mojito', 'Lemonade', 'Juice'],
+          keywords: ['beverage', 'drink']
         }
+      };
+
+      const allItems: any[] = [];
+      
+      Object.entries(templates).forEach(([category, config]) => {
+        for (let i = 0; i < config.count; i++) {
+          const prefix = config.prefixes[Math.floor(Math.random() * config.prefixes.length)];
+          const item = config.items[Math.floor(Math.random() * config.items.length)];
+          const name = `${prefix} ${item} #${i + 1}`;
+          const keyword = config.keywords[Math.floor(Math.random() * config.keywords.length)];
+          
+          allItems.push({
+            name,
+            category,
+            price: Math.floor(Math.random() * (450 - 60 + 1) + 60),
+            image: `https://picsum.photos/seed/${category.toLowerCase()}${i}/800/600`,
+            description: `Authentic ${name} prepared with fresh ingredients and traditional spices.`,
+            isVeg: Math.random() > 0.3,
+            rating: parseFloat((Math.random() * (4.8 - 3.5) + 3.5).toFixed(1)),
+            totalOrders: 0,
+            totalRevenue: 0,
+            createdAt: new Date().toISOString()
+          });
+        }
+      });
+
+      // Firestore Batch Write (Max 500 per batch)
+      const batches = [];
+      for (let i = 0; i < allItems.length; i += 450) {
+        const batch = writeBatch(db);
+        const chunk = allItems.slice(i, i + 450);
+        chunk.forEach(item => {
+          const ref = doc(collection(db, 'dishes'));
+          batch.set(ref, item);
+        });
+        batches.push(batch.commit());
       }
 
-      await batch.commit();
-      toast({ title: "Import Complete", description: `Successfully added ${addedCount} authentic dishes.` });
+      await Promise.all(batches);
+      toast({ title: "Bootstrap Complete", description: `Successfully added ${allItems.length} unique dishes.` });
     } catch (e: any) {
-      toast({ variant: "destructive", title: "Import Failed", description: e.message });
+      toast({ variant: "destructive", title: "Seeding Failed", description: e.message });
     } finally {
       setIsSeeding(false);
     }
@@ -117,17 +178,17 @@ export default function AdminDatabasePage() {
             <Database className="w-10 h-10 text-primary" />
             Mega Repository
           </h1>
-          <p className="text-muted-foreground font-medium">Manage your authentic Indian menu catalog.</p>
+          <p className="text-muted-foreground font-medium">Manage your authentic Indian menu catalog ({dishes?.length || 0} items).</p>
         </div>
         <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
           <Button 
-            variant="outline" 
-            onClick={handleImportAuthenticMenu} 
+            variant="default" 
+            onClick={handleMegaSeed500} 
             disabled={isSeeding}
-            className="rounded-xl border-primary text-primary hover:bg-primary/5 font-bold h-11"
+            className="rounded-xl bg-accent hover:bg-accent/90 text-white font-black h-11 px-6 shadow-lg shadow-accent/20 animate-pulse hover:animate-none transition-all"
           >
-            {isSeeding ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <UploadCloud className="w-4 h-4 mr-2" />}
-            Import 120 Authentic Dishes
+            {isSeeding ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
+            BOOTSTRAP 500+ DISHES
           </Button>
           <div className="relative w-full md:w-64">
             <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
@@ -143,7 +204,7 @@ export default function AdminDatabasePage() {
 
       <Card className="border shadow-sm rounded-3xl overflow-hidden bg-white">
         <div className="p-6 border-b flex justify-between items-center bg-muted/20">
-          <h3 className="font-bold text-lg">Catalog ({dishes?.length || 0})</h3>
+          <h3 className="font-bold text-lg text-foreground">Catalog Stream</h3>
           <Dialog open={isAddDishOpen} onOpenChange={setIsAddDishOpen}>
             <DialogTrigger asChild>
               <Button className="rounded-xl bg-primary hover:bg-primary/90 font-bold">
@@ -202,10 +263,10 @@ export default function AdminDatabasePage() {
                 <TableRow key={dish.id} className="hover:bg-muted/5 transition-colors">
                   <TableCell className="p-6">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl overflow-hidden border bg-muted shrink-0">
+                      <div className="w-12 h-12 rounded-xl overflow-hidden border bg-muted shrink-0 shadow-sm">
                         <img src={dish.image} alt={dish.name} className="object-cover w-full h-full" />
                       </div>
-                      <span className="font-bold text-sm">{dish.name}</span>
+                      <span className="font-bold text-sm text-foreground">{dish.name}</span>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -216,9 +277,9 @@ export default function AdminDatabasePage() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="rounded-full text-[10px]">{dish.category}</Badge>
+                    <Badge variant="outline" className="rounded-full text-[10px] uppercase font-bold text-muted-foreground">{dish.category.replace('_', ' ')}</Badge>
                   </TableCell>
-                  <TableCell className="font-bold text-primary">₹{dish.price}</TableCell>
+                  <TableCell className="font-black text-primary">₹{dish.price}</TableCell>
                   <TableCell className="text-right pr-6">
                     <Button variant="ghost" size="icon" className="rounded-lg text-muted-foreground hover:text-destructive" onClick={() => handleDelete(dish.id)}>
                       <Trash2 className="w-4 h-4" />
@@ -226,6 +287,15 @@ export default function AdminDatabasePage() {
                   </TableCell>
                 </TableRow>
               ))}
+              {(!dishes || dishes.length === 0) && (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-20 opacity-30">
+                    <Database className="w-12 h-12 mx-auto mb-4" />
+                    <p className="text-lg font-bold italic">No dishes in repository.</p>
+                    <p className="text-sm">Click "BOOTSTRAP 500+ DISHES" to populate.</p>
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </div>
