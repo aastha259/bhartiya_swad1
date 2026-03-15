@@ -30,13 +30,15 @@ import { useCart } from '@/lib/contexts/cart-context';
 import { useFirestore } from '@/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export default function CheckoutPage() {
   const router = useRouter();
   const db = useFirestore();
   const { toast } = useToast();
   const { user, loading: authLoading, logout } = useAuth();
-  const { items, totalPrice, clearCart, totalQuantity } = useCart();
+  const { items, totalPrice, clearCart, totalQuantity, isLoading: cartLoading } = useCart();
   
   const [isProcessing, setIsProcessing] = useState(false);
   const [isOrdered, setIsOrdered] = useState(false);
@@ -49,8 +51,18 @@ export default function CheckoutPage() {
   });
 
   useEffect(() => {
-    if (!authLoading && !user) router.push('/login?callbackUrl=/checkout');
-    if (!authLoading && user && items.length === 0 && !isOrdered) router.push('/menu');
+    // Wait for auth and cart to load before making redirect decisions
+    if (authLoading || cartLoading) return;
+
+    if (!user) {
+      router.push('/login?callbackUrl=/checkout');
+      return;
+    }
+
+    if (items.length === 0 && !isOrdered) {
+      router.push('/menu');
+      return;
+    }
     
     if (user && !deliveryDetails.name) {
       setDeliveryDetails(prev => ({
@@ -58,9 +70,9 @@ export default function CheckoutPage() {
         name: user.displayName || '',
       }));
     }
-  }, [user, authLoading, items.length, isOrdered, router, deliveryDetails.name]);
+  }, [user, authLoading, cartLoading, items.length, isOrdered, router, deliveryDetails.name]);
 
-  const handlePlaceOrder = async (e: React.FormEvent) => {
+  const handlePlaceOrder = (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
@@ -74,7 +86,6 @@ export default function CheckoutPage() {
     }
 
     if (paymentMethod === 'Online') {
-      // For Online Payment, navigate to Payment Page
       const params = new URLSearchParams({
         name: deliveryDetails.name,
         phone: deliveryDetails.phone,
@@ -86,43 +97,45 @@ export default function CheckoutPage() {
 
     setIsProcessing(true);
     
-    try {
-      const orderData = {
-        userId: user.uid,
-        items: items.map(item => ({
-          dishId: item.id,
-          foodName: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          subtotal: item.price * item.quantity
-        })),
-        totalAmount: totalPrice + 54, // Items + taxes/fees
-        status: 'Pending',
-        paymentMethod: paymentMethod,
-        paymentStatus: 'Pending',
-        deliveryDetails: deliveryDetails,
-        orderDate: new Date().toISOString(),
-        createdAt: serverTimestamp()
-      };
+    const orderData = {
+      userId: user.uid,
+      items: items.map(item => ({
+        dishId: item.id,
+        foodName: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        subtotal: item.price * item.quantity
+      })),
+      totalAmount: totalPrice + 54,
+      status: 'Pending',
+      paymentMethod: paymentMethod,
+      paymentStatus: 'Pending',
+      deliveryDetails: deliveryDetails,
+      orderDate: new Date().toISOString(),
+      createdAt: serverTimestamp()
+    };
 
-      await addDoc(collection(db, 'orders'), orderData);
-      
-      setIsOrdered(true);
-      clearCart();
-      toast({
-        title: "Order Placed!",
-        description: "Your meal is on its way."
+    // Non-blocking mutation
+    addDoc(collection(db, 'orders'), orderData)
+      .then(() => {
+        setIsOrdered(true);
+        clearCart();
+        toast({
+          title: "Order Placed!",
+          description: "Your meal is on its way."
+        });
+      })
+      .catch(async (error) => {
+        const permissionError = new FirestorePermissionError({
+          path: 'orders',
+          operation: 'create',
+          requestResourceData: orderData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      })
+      .finally(() => {
+        setIsProcessing(false);
       });
-    } catch (error: any) {
-      console.error("Order failed:", error);
-      toast({
-        variant: "destructive",
-        title: "Order Failed",
-        description: error.message || "Could not process your order."
-      });
-    } finally {
-      setIsProcessing(false);
-    }
   };
 
   if (isOrdered) {
@@ -146,6 +159,17 @@ export default function CheckoutPage() {
               <Button variant="ghost" className="font-bold">Order Something Else</Button>
             </Link>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (authLoading || cartLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#FDFCFB]">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-12 h-12 animate-spin text-primary" />
+          <p className="font-bold text-muted-foreground">Validating your basket...</p>
         </div>
       </div>
     );

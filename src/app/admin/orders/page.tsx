@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState } from 'react';
@@ -47,6 +46,8 @@ import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, doc, updateDoc, query, orderBy } from 'firebase/firestore';
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export default function AdminOrdersPage() {
   const db = useFirestore();
@@ -72,9 +73,18 @@ export default function AdminOrdersPage() {
   }, [db, selectedOrder]);
   const { data: orderItems, isLoading: itemsLoading } = useCollection(orderItemsQuery);
 
-  const handleUpdateStatus = async (orderId: string, newStatus: string) => {
+  const handleUpdateStatus = (orderId: string, newStatus: string) => {
     const orderRef = doc(db, 'orders', orderId);
-    await updateDoc(orderRef, { status: newStatus });
+    // Non-blocking update
+    updateDoc(orderRef, { status: newStatus })
+      .catch(async (error) => {
+        const permissionError = new FirestorePermissionError({
+          path: orderRef.path,
+          operation: 'update',
+          requestResourceData: { status: newStatus },
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
   };
 
   const filteredOrders = orders?.filter(o => 
@@ -245,7 +255,7 @@ export default function AdminOrdersPage() {
               <div>
                 <DialogTitle className="text-3xl font-headline font-black">Order Breakdown</DialogTitle>
                 <DialogDescription className="text-white/70 font-bold mt-1">
-                  ID: #{selectedOrder?.id.toUpperCase()}
+                  ID: #{selectedOrder?.id?.toUpperCase()}
                 </DialogDescription>
               </div>
               <Badge className={cn("rounded-full px-4 py-1.5 font-black text-[10px] uppercase border-none bg-white", getStatusColor(selectedOrder?.status).split(' ')[1])}>
@@ -265,7 +275,7 @@ export default function AdminOrdersPage() {
                   </div>
                   <div>
                     <p className="font-bold text-sm">{users?.find(u => u.id === selectedOrder?.userId)?.displayName || 'Guest'}</p>
-                    <p className="text-[10px] text-muted-foreground">UID: {selectedOrder?.userId.slice(0, 8)}</p>
+                    <p className="text-[10px] text-muted-foreground">UID: {selectedOrder?.userId?.slice(0, 8)}</p>
                   </div>
                 </div>
               </div>
@@ -277,7 +287,7 @@ export default function AdminOrdersPage() {
                   </div>
                   <div>
                     <p className="font-bold text-sm">{restaurants?.find(r => r.id === selectedOrder?.restaurantId)?.name || 'Outlet'}</p>
-                    <p className="text-[10px] text-muted-foreground">RID: {selectedOrder?.restaurantId.slice(0, 8)}</p>
+                    <p className="text-[10px] text-muted-foreground">RID: {selectedOrder?.restaurantId?.slice(0, 8)}</p>
                   </div>
                 </div>
               </div>

@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect, Suspense } from 'react';
@@ -25,6 +24,8 @@ import { useCart } from '@/lib/contexts/cart-context';
 import { useFirestore } from '@/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 function PaymentContent() {
   const router = useRouter();
@@ -32,7 +33,7 @@ function PaymentContent() {
   const db = useFirestore();
   const { toast } = useToast();
   const { user, loading: authLoading, logout } = useAuth();
-  const { items, totalPrice, clearCart } = useCart();
+  const { items, totalPrice, clearCart, isLoading: cartLoading } = useCart();
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -45,9 +46,17 @@ function PaymentContent() {
   };
 
   useEffect(() => {
-    if (!authLoading && !user) router.push('/login?callbackUrl=/checkout');
-    if (!authLoading && user && items.length === 0 && !isSuccess) router.push('/menu');
-  }, [user, authLoading, items.length, isSuccess, router]);
+    if (authLoading || cartLoading) return;
+
+    if (!user) {
+      router.push('/login?callbackUrl=/checkout');
+      return;
+    }
+
+    if (items.length === 0 && !isSuccess) {
+      router.push('/menu');
+    }
+  }, [user, authLoading, cartLoading, items.length, isSuccess, router]);
 
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,46 +64,48 @@ function PaymentContent() {
 
     setIsProcessing(true);
     
-    // Simulate payment processing delay
+    // Simulate secure payment processing handshake
     await new Promise(resolve => setTimeout(resolve, 2000));
 
-    try {
-      const orderData = {
-        userId: user.uid,
-        items: items.map(item => ({
-          dishId: item.id,
-          foodName: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          subtotal: item.price * item.quantity
-        })),
-        totalAmount: totalPrice + 54,
-        status: 'Preparing',
-        paymentMethod: 'Online',
-        paymentStatus: 'Paid',
-        deliveryDetails: deliveryInfo,
-        orderDate: new Date().toISOString(),
-        createdAt: serverTimestamp()
-      };
+    const orderData = {
+      userId: user.uid,
+      items: items.map(item => ({
+        dishId: item.id,
+        foodName: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        subtotal: item.price * item.quantity
+      })),
+      totalAmount: totalPrice + 54,
+      status: 'Preparing',
+      paymentMethod: 'Online',
+      paymentStatus: 'Paid',
+      deliveryDetails: deliveryInfo,
+      orderDate: new Date().toISOString(),
+      createdAt: serverTimestamp()
+    };
 
-      await addDoc(collection(db, 'orders'), orderData);
-      
-      setIsSuccess(true);
-      clearCart();
-      toast({
-        title: "Payment Successful!",
-        description: "Your order has been placed and is being prepared."
+    // Non-blocking mutation with proper error propagation
+    addDoc(collection(db, 'orders'), orderData)
+      .then(() => {
+        setIsSuccess(true);
+        clearCart();
+        toast({
+          title: "Payment Successful!",
+          description: "Your order has been placed and is being prepared."
+        });
+      })
+      .catch(async (error) => {
+        const permissionError = new FirestorePermissionError({
+          path: 'orders',
+          operation: 'create',
+          requestResourceData: orderData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      })
+      .finally(() => {
+        setIsProcessing(false);
       });
-    } catch (error: any) {
-      console.error("Payment/Order failed:", error);
-      toast({
-        variant: "destructive",
-        title: "Payment Failed",
-        description: "Could not complete your transaction. Please try again."
-      });
-    } finally {
-      setIsProcessing(false);
-    }
   };
 
   if (isSuccess) {
@@ -115,6 +126,17 @@ function PaymentContent() {
               </Button>
             </Link>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (authLoading || cartLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#FDFCFB]">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-12 h-12 animate-spin text-primary" />
+          <p className="font-bold text-muted-foreground">Securing payment connection...</p>
         </div>
       </div>
     );
