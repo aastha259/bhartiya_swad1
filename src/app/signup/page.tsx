@@ -224,7 +224,7 @@ export default function SignupPage() {
 
         <CardFooter className="p-10 pt-0 text-center justify-center border-t border-dashed mt-4">
           <p className="text-sm text-muted-foreground font-medium mt-6">
-            Already have an account? <Link href="/login" className="text-primary font-black hover:underline underline-offset-4">Sign In here</Link>
+            Already have an account? <Link href="/login" className="text-primary font-black hover:underline underline-offset-4">Login</Link>
           </p>
         </CardFooter>
       </Card>

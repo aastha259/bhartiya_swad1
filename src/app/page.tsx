@@ -1,4 +1,3 @@
-
 "use client"
 
 import React from 'react';
@@ -32,7 +31,7 @@ export default function LandingPage() {
           <Link href="/login">
             <Button variant="ghost" className="font-medium">Login</Button>
           </Link>
-          <Link href="/login">
+          <Link href="/signup">
             <Button className="bg-primary hover:bg-primary/90 shadow-xl shadow-primary/20 font-bold px-6">Sign Up</Button>
           </Link>
         </div>
