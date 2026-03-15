@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Trash2, Plus, Search, Database, Loader2, Sparkles, Flame } from 'lucide-react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, doc, deleteDoc, addDoc, writeBatch } from 'firebase/firestore';
+import { collection, doc, deleteDoc, addDoc, writeBatch, getDocs } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -47,6 +47,33 @@ export default function AdminDatabasePage() {
     toast({ title: "Seeding Started", description: "Generating 500+ unique dishes..." });
     
     try {
+      // First, ensure we have some restaurants to associate with
+      const resSnap = await getDocs(collection(db, 'restaurants'));
+      let restaurantIds = resSnap.docs.map(d => d.id);
+
+      if (restaurantIds.length === 0) {
+        toast({ title: "Seeding Restaurants", description: "Adding base restaurant network first..." });
+        const batch = writeBatch(db);
+        const resNames = ['Royal Punjab', 'South Spice', 'The Pizza Co.', 'Burger King Indian', 'Street Delights'];
+        const newResIds: string[] = [];
+        resNames.forEach(name => {
+          const ref = doc(collection(db, 'restaurants'));
+          batch.set(ref, {
+            name,
+            address: 'Main Street, Bharat',
+            phone: '+91 9876543210',
+            email: `contact@${name.toLowerCase().replace(' ', '')}.com`,
+            imageURL: `https://picsum.photos/seed/${name}/600/400`,
+            averageRating: 4.5,
+            totalOrders: 0,
+            totalRevenue: 0
+          });
+          newResIds.push(ref.id);
+        });
+        await batch.commit();
+        restaurantIds = newResIds;
+      }
+
       const templates: Record<string, { count: number; prefixes: string[]; items: string[]; keywords: string[] }> = {
         PIZZAS: {
           count: 75,
@@ -110,6 +137,7 @@ export default function AdminDatabasePage() {
             rating: parseFloat((Math.random() * (4.8 - 3.5) + 3.5).toFixed(1)),
             totalOrders: Math.floor(Math.random() * 200),
             totalRevenue: 0,
+            restaurantId: restaurantIds[Math.floor(Math.random() * restaurantIds.length)],
             createdAt: new Date().toISOString()
           });
         }
@@ -128,7 +156,7 @@ export default function AdminDatabasePage() {
         await batch.commit();
       }
 
-      toast({ title: "Sync Complete", description: `Successfully added ${allItems.length} unique dishes to your repository.` });
+      toast({ title: "Sync Complete", description: `Successfully added ${allItems.length} unique dishes associated with ${restaurantIds.length} restaurants.` });
     } catch (e: any) {
       toast({ variant: "destructive", title: "Seeding Failed", description: e.message });
       console.error(e);
@@ -150,7 +178,8 @@ export default function AdminDatabasePage() {
       isVeg: formData.get('isVeg') === 'on',
       createdAt: new Date().toISOString(),
       totalOrders: 0,
-      totalRevenue: 0
+      totalRevenue: 0,
+      restaurantId: '' // Would ideally pick from a dropdown
     };
     await addDoc(collection(db, 'dishes'), newDish);
     setIsAddDishOpen(false);

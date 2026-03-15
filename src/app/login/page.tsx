@@ -27,54 +27,38 @@ function LoginForm() {
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
 
   const handleLogin = async (role: 'user' | 'admin') => {
-    // Basic Validation
     if (!email || !email.trim()) {
-      toast({
-        variant: "destructive",
-        title: "Email Required",
-        description: "Please enter your email address."
-      });
+      toast({ variant: "destructive", title: "Email Required", description: "Please enter your email address." });
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      toast({
-        variant: "destructive",
-        title: "Invalid Email",
-        description: "Please enter a valid email address (e.g., name@example.com)."
-      });
+      toast({ variant: "destructive", title: "Invalid Email", description: "Please enter a valid email address." });
       return;
     }
 
     if (!password || password.length < 6) {
-      toast({
-        variant: "destructive",
-        title: "Password Required",
-        description: "Please enter your password (minimum 6 characters)."
-      });
+      toast({ variant: "destructive", title: "Password Required", description: "Please enter your password (min 6 chars)." });
       return;
     }
 
     setLoading(true);
     try {
       if (role === 'admin') {
-        // Admin Login with specific credentials
         if (email === 'xyz@admin.com' && password === '12345678') {
           let userCredential;
           try {
             userCredential = await signInWithEmailAndPassword(auth, email, password);
           } catch (err: any) {
-            if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/invalid-email') {
+            if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
               userCredential = await createUserWithEmailAndPassword(auth, email, password);
             } else {
               throw err;
             }
           }
 
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('bhartiya_swad_admin', 'true');
-          }
+          if (typeof window !== 'undefined') localStorage.setItem('bhartiya_swad_admin', 'true');
 
           await setDoc(doc(db, 'admin_roles', userCredential.user.uid), {
             email: userCredential.user.email,
@@ -94,29 +78,15 @@ function LoginForm() {
             lastLogin: serverTimestamp()
           }, { merge: true });
           
-          toast({
-            title: "Admin Access Granted",
-            description: "Welcome to the management console."
-          });
-          
+          toast({ title: "Admin Access Granted", description: "Welcome to the management console." });
           router.push('/admin/dashboard');
         } else {
-          toast({
-            variant: "destructive",
-            title: "Access Denied",
-            description: "Invalid admin email or security token."
-          });
+          toast({ variant: "destructive", title: "Access Denied", description: "Invalid admin email or password." });
         }
       } else {
-        // Normal User Login
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('bhartiya_swad_admin');
-        }
-        
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const userRef = doc(db, 'users', userCredential.user.uid);
         
-        // Check if user exists in Firestore
         const userDoc = await getDoc(userRef);
         if (!userDoc.exists()) {
           await setDoc(userRef, {
@@ -132,34 +102,21 @@ function LoginForm() {
             lastLogin: serverTimestamp()
           });
         } else {
-          // Update lastLogin for existing user
-          await setDoc(userRef, {
-            lastLogin: serverTimestamp()
-          }, { merge: true });
+          await setDoc(userRef, { lastLogin: serverTimestamp() }, { merge: true });
         }
 
-        toast({
-          title: "Login Successful",
-          description: "Welcome back to Bhartiya Swad."
-        });
-        
+        toast({ title: "Login Successful", description: "Welcome back to Bhartiya Swad." });
         router.push(callbackUrl);
       }
     } catch (error: any) {
       console.error(error);
       let message = "An unexpected error occurred.";
-      if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+      if (error.code === 'auth/operation-not-allowed') {
+        message = "Login provider not enabled. Please enable Email/Password in Firebase Console.";
+      } else if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
         message = "Invalid email or password.";
-      } else if (error.code === 'auth/invalid-email') {
-        message = "The email address is badly formatted.";
-      } else if (error.code === 'auth/operation-not-allowed') {
-        message = "This login method is not enabled. Please enable it in the Firebase Console.";
       }
-      toast({
-        variant: "destructive",
-        title: "Login Failed",
-        description: message
-      });
+      toast({ variant: "destructive", title: "Login Failed", description: message });
     } finally {
       setLoading(false);
     }
@@ -189,28 +146,18 @@ function LoginForm() {
           lastLogin: serverTimestamp()
         });
       } else {
-        // Update lastLogin for returning Google user
-        await setDoc(userDocRef, {
-          lastLogin: serverTimestamp()
-        }, { merge: true });
+        await setDoc(userDocRef, { lastLogin: serverTimestamp() }, { merge: true });
       }
 
-      toast({
-        title: "Login Successful",
-        description: `Welcome, ${user.displayName}!`
-      });
+      toast({ title: "Login Successful", description: `Welcome, ${user.displayName}!` });
       router.push(callbackUrl);
     } catch (error: any) {
       console.error(error);
-      let message = error.message;
+      let message = "Could not sign in with Google.";
       if (error.code === 'auth/operation-not-allowed') {
         message = "Google Sign-In is not enabled. Please enable it in the Firebase Console.";
       }
-      toast({
-        variant: "destructive",
-        title: "Google Login Failed",
-        description: message
-      });
+      toast({ variant: "destructive", title: "Google Login Failed", description: message });
     } finally {
       setLoading(false);
     }
@@ -352,7 +299,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6 relative overflow-hidden" suppressHydrationWarning>
-      {/* Dynamic Background Pattern */}
       <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none">
         <div className="grid grid-cols-12 gap-4 h-full w-full rotate-12 scale-150">
           {Array.from({ length: 48 }).map((_, i) => (

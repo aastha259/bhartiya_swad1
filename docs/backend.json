@@ -37,9 +37,27 @@
         "category": { "type": "string" },
         "isVeg": { "type": "boolean" },
         "totalOrders": { "type": "number" },
-        "totalRevenue": { "type": "number" }
+        "totalRevenue": { "type": "number" },
+        "restaurantId": { "type": "string" }
       },
       "required": ["id", "name", "description", "price", "image", "rating", "category", "isVeg", "totalOrders", "totalRevenue"]
+    },
+    "Restaurant": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Restaurant",
+      "type": "object",
+      "description": "Represents a partner restaurant.",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "address": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "imageURL": { "type": "string", "format": "uri" },
+        "averageRating": { "type": "number" },
+        "totalOrders": { "type": "number" },
+        "totalRevenue": { "type": "number" }
+      }
     },
     "CartItem": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -47,6 +65,7 @@
       "type": "object",
       "description": "Represents an item in a user's shopping cart.",
       "properties": {
+        "dishId": { "type": "string" },
         "name": { "type": "string" },
         "price": { "type": "number" },
         "imageURL": { "type": "string", "format": "uri" },
@@ -95,6 +114,10 @@
     "/dishes/{dishId}": {
       "schema": "Dish",
       "description": "Stores individual authentic Indian dishes."
+    },
+    "/restaurants/{restaurantId}": {
+      "schema": "Restaurant",
+      "description": "Stores partner restaurant details."
     },
     "/orders/{orderId}": {
       "schema": "Order",
