@@ -40,23 +40,30 @@ import {
   DialogFooter
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useAuth } from '@/lib/contexts/auth-context';
 import { collection, doc, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 
 export default function AdminRestaurantsPage() {
   const db = useFirestore();
+  const { user } = useAuth();
   const [search, setSearch] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingRestaurant, setEditingRestaurant] = useState<any>(null);
   const [viewingMenu, setViewingMenu] = useState<any>(null);
 
   // Fetch Restaurants
-  const restaurantsQuery = useMemoFirebase(() => collection(db, 'restaurants'), [db]);
+  const restaurantsQuery = useMemoFirebase(() => {
+    if (!user?.isAdmin) return null;
+    return collection(db, 'restaurants');
+  }, [db, user?.isAdmin]);
   const { data: restaurants, isLoading } = useCollection(restaurantsQuery);
 
   // Fetch Dishes
-  const dishesQuery = useMemoFirebase(() => collection(db, 'dishes'), [db]);
+  const dishesQuery = useMemoFirebase(() => {
+    if (!user?.isAdmin) return null;
+    return collection(db, 'dishes');
+  }, [db, user?.isAdmin]);
   const { data: allDishes } = useCollection(dishesQuery);
 
   const filteredRestaurants = restaurants?.filter(r => 
@@ -92,6 +99,8 @@ export default function AdminRestaurantsPage() {
       await deleteDoc(doc(db, 'restaurants', id));
     }
   };
+
+  if (!user?.isAdmin) return null;
 
   return (
     <div className="space-y-12 animate-in fade-in duration-700">

@@ -7,6 +7,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useAuth } from '@/lib/contexts/auth-context';
 import { collection } from 'firebase/firestore';
 import { 
   BarChart, 
@@ -20,8 +21,12 @@ import {
 
 export default function AdminCustomersPage() {
   const db = useFirestore();
+  const { user } = useAuth();
 
-  const usersQuery = useMemoFirebase(() => collection(db, 'users'), [db]);
+  const usersQuery = useMemoFirebase(() => {
+    if (!user?.isAdmin) return null;
+    return collection(db, 'users');
+  }, [db, user?.isAdmin]);
   const { data: users } = useCollection(usersQuery);
 
   const customerData = users?.map(u => ({
@@ -33,6 +38,8 @@ export default function AdminCustomersPage() {
   })).sort((a, b) => b.spent - a.spent) || [];
 
   const chartData = customerData.slice(0, 10);
+
+  if (!user?.isAdmin) return null;
 
   return (
     <div className="space-y-12">

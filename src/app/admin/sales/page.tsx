@@ -10,33 +10,33 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
   AreaChart,
   Area
 } from 'recharts';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useAuth } from '@/lib/contexts/auth-context';
 import { collection } from 'firebase/firestore';
 import { format, subDays, startOfWeek, isSameDay, parseISO, isSameWeek } from 'date-fns';
 import { TrendingUp, ShoppingBag, BarChart3 } from 'lucide-react';
 
-const COLORS = ['#E55C0A', '#C40A3A', '#FFD700', '#FFA500', '#4CAF50', '#2196F3'];
-
 export default function AdminSalesPage() {
   const db = useFirestore();
+  const { user } = useAuth();
 
-  const ordersQuery = useMemoFirebase(() => collection(db, 'orders'), [db]);
+  const ordersQuery = useMemoFirebase(() => {
+    if (!user?.isAdmin) return null;
+    return collection(db, 'orders');
+  }, [db, user?.isAdmin]);
   const { data: orders } = useCollection(ordersQuery);
 
-  const dishesQuery = useMemoFirebase(() => collection(db, 'dishes'), [db]);
+  const dishesQuery = useMemoFirebase(() => {
+    if (!user?.isAdmin) return null;
+    return collection(db, 'dishes');
+  }, [db, user?.isAdmin]);
   const { data: dishes } = useCollection(dishesQuery);
-
-  const categoriesQuery = useMemoFirebase(() => collection(db, 'categories'), [db]);
-  const { data: categories } = useCollection(categoriesQuery);
 
   const dailySalesData = useMemo(() => {
     if (!orders) return [];
@@ -45,7 +45,7 @@ export default function AdminSalesPage() {
       const label = format(date, 'MMM dd');
       const revenue = orders
         .filter(o => o.orderDate && isSameDay(parseISO(o.orderDate), date))
-        .reduce((acc, o) => acc + (o.totalAmount || 0), 0);
+        .reduce((acc, o) => acc + (o.totalPrice || o.totalAmount || 0), 0);
       return { name: label, sales: revenue };
     });
   }, [orders]);
@@ -58,7 +58,7 @@ export default function AdminSalesPage() {
       const label = `Week ${format(weekStart, 'MM/dd')}`;
       const revenue = orders
         .filter(o => o.orderDate && isSameWeek(parseISO(o.orderDate), weekStart))
-        .reduce((acc, o) => acc + (o.totalAmount || 0), 0);
+        .reduce((acc, o) => acc + (o.totalPrice || o.totalAmount || 0), 0);
       return { name: label, revenue };
     });
   }, [orders]);
@@ -70,14 +70,7 @@ export default function AdminSalesPage() {
       .slice(0, 8);
   }, [dishes]);
 
-  const categoryData = useMemo(() => {
-    if (!dishes) return [];
-    const counts: Record<string, number> = {};
-    dishes.forEach(d => {
-      counts[d.category] = (counts[d.category] || 0) + (d.totalRevenue || 0);
-    });
-    return Object.entries(counts).map(([name, value]) => ({ name, value })).filter(v => v.value > 0);
-  }, [dishes]);
+  if (!user?.isAdmin) return null;
 
   return (
     <div className="space-y-12 animate-in fade-in duration-700">
@@ -145,7 +138,7 @@ export default function AdminSalesPage() {
             <TableBody>
               {topSellingItems.map((dish) => (
                 <TableRow key={dish.id} className="hover:bg-muted/5 transition-colors border-b last:border-none">
-                  <TableCell className="px-10 py-6"><div className="flex items-center gap-4"><div className="w-10 h-10 rounded-xl bg-muted overflow-hidden flex-shrink-0"><img src={dish.image} alt={dish.name} className="object-cover w-full h-full" /></div><span className="font-black">{dish.name}</span></div></TableCell>
+                  <TableCell className="px-10 py-6"><div className="flex items-center gap-4"><div className="w-10 h-10 rounded-xl bg-muted overflow-hidden flex-shrink-0"><img src={dish.image || dish.imageURL} alt={dish.name} className="object-cover w-full h-full" /></div><span className="font-black">{dish.name}</span></div></TableCell>
                   <TableCell><Badge variant="outline" className="rounded-full px-3 py-0.5 font-bold border-primary/20 text-primary">{dish.category}</Badge></TableCell>
                   <TableCell className="font-bold text-center text-muted-foreground">{dish.totalOrders || 0}</TableCell>
                   <TableCell className="font-black text-right pr-10 text-primary text-lg">₹{(dish.totalRevenue || 0).toLocaleString()}</TableCell>

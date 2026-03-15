@@ -36,18 +36,27 @@ export default function AdminDashboardPage() {
   const db = useFirestore();
   const { user } = useAuth();
 
-  const ordersQuery = useMemoFirebase(() => collection(db, 'orders'), [db]);
+  const ordersQuery = useMemoFirebase(() => {
+    if (!user?.isAdmin) return null;
+    return collection(db, 'orders');
+  }, [db, user?.isAdmin]);
   const { data: orders } = useCollection(ordersQuery);
 
-  const usersQuery = useMemoFirebase(() => collection(db, 'users'), [db]);
+  const usersQuery = useMemoFirebase(() => {
+    if (!user?.isAdmin) return null;
+    return collection(db, 'users');
+  }, [db, user?.isAdmin]);
   const { data: users } = useCollection(usersQuery);
 
-  const restaurantsQuery = useMemoFirebase(() => collection(db, 'restaurants'), [db]);
+  const restaurantsQuery = useMemoFirebase(() => {
+    if (!user?.isAdmin) return null;
+    return collection(db, 'restaurants');
+  }, [db, user?.isAdmin]);
   const { data: restaurants } = useCollection(restaurantsQuery);
 
   const stats = useMemo(() => {
     const totalOrders = orders?.length || 0;
-    const totalRevenue = orders?.reduce((acc, o) => acc + (o.totalAmount || 0), 0) || 0;
+    const totalRevenue = orders?.reduce((acc, o) => acc + (o.totalPrice || o.totalAmount || 0), 0) || 0;
     const totalCustomers = users?.length || 0;
     const totalRestaurants = restaurants?.length || 0;
 
@@ -98,7 +107,7 @@ export default function AdminDashboardPage() {
       const dayLabel = format(date, 'MMM dd');
       const revenue = orders
         .filter(o => o.orderDate && isSameDay(parseISO(o.orderDate), date))
-        .reduce((acc, o) => acc + (o.totalAmount || 0), 0);
+        .reduce((acc, o) => acc + (o.totalPrice || o.totalAmount || 0), 0);
       return { name: dayLabel, revenue };
     });
   }, [orders]);
@@ -200,10 +209,12 @@ export default function AdminDashboardPage() {
             <CardTitle className="text-2xl font-headline font-black text-foreground">Recent Activity</CardTitle>
             <p className="text-sm text-muted-foreground mt-1">A live stream of the latest orders placed.</p>
           </div>
-          <Button variant="outline" className="rounded-xl font-bold border-primary text-primary hover:bg-primary hover:text-white transition-all">
-            View All Orders
-            <ChevronRight className="ml-2 w-4 h-4" />
-          </Button>
+          <Link href="/admin/orders">
+            <Button variant="outline" className="rounded-xl font-bold border-primary text-primary hover:bg-primary hover:text-white transition-all">
+              View All Orders
+              <ChevronRight className="ml-2 w-4 h-4" />
+            </Button>
+          </Link>
         </CardHeader>
         <div className="overflow-x-auto">
           <Table>
@@ -218,15 +229,15 @@ export default function AdminDashboardPage() {
             <TableBody>
               {recentOrders.map((order) => (
                 <TableRow key={order.id} className="hover:bg-muted/5 transition-colors border-b last:border-none">
-                  <TableCell className="px-10 font-mono text-xs font-bold text-muted-foreground">#{order.id.slice(0, 8).toUpperCase()}</TableCell>
-                  <TableCell className="font-black text-primary text-lg">₹{(order.totalAmount || 0).toLocaleString()}</TableCell>
+                  <TableCell className="px-10 font-mono text-xs font-bold text-muted-foreground">#{(order.orderId || order.id).slice(0, 8).toUpperCase()}</TableCell>
+                  <TableCell className="font-black text-primary text-lg">₹{(order.totalPrice || order.totalAmount || 0).toLocaleString()}</TableCell>
                   <TableCell>
                     <Badge className={cn(
                       "rounded-full px-4 py-1 font-bold text-[10px] uppercase tracking-wider border-none",
-                      order.status === 'Delivered' ? 'bg-green-100 text-green-700' : 
-                      order.status === 'Preparing' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'
+                      (order.orderStatus || order.status) === 'Delivered' ? 'bg-green-100 text-green-700' : 
+                      (order.orderStatus || order.status) === 'Preparing Food' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'
                     )}>
-                      {order.status || 'Pending'}
+                      {order.orderStatus || order.status || 'Pending'}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground font-bold italic">

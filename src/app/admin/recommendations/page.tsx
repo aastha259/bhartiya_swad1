@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Sparkles, Loader2, User, Utensils, History } from 'lucide-react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useAuth } from '@/lib/contexts/auth-context';
 import { collection } from 'firebase/firestore';
 import { personalizedFoodRecommendations } from '@/ai/flows/personalized-food-recommendations-flow';
 import { Badge } from '@/components/ui/badge';
@@ -13,13 +14,20 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function AdminRecommendationsPage() {
   const db = useFirestore();
+  const { user: currentUser } = useAuth();
   const [activeRecs, setActiveRecs] = useState<Record<string, any[]>>({});
   const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({});
 
-  const usersQuery = useMemoFirebase(() => collection(db, 'users'), [db]);
+  const usersQuery = useMemoFirebase(() => {
+    if (!currentUser?.isAdmin) return null;
+    return collection(db, 'users');
+  }, [db, currentUser?.isAdmin]);
   const { data: users } = useCollection(usersQuery);
 
-  const dishesQuery = useMemoFirebase(() => collection(db, 'dishes'), [db]);
+  const dishesQuery = useMemoFirebase(() => {
+    if (!currentUser?.isAdmin) return null;
+    return collection(db, 'dishes');
+  }, [db, currentUser?.isAdmin]);
   const { data: dishes } = useCollection(dishesQuery);
 
   const generateForUser = async (userId: string, userName: string) => {
@@ -38,7 +46,7 @@ export default function AdminRecommendationsPage() {
           price: d.price,
           category: d.category,
           rating: d.rating,
-          imageURL: d.image
+          imageURL: d.image || d.imageURL
         })) || []
       });
 
@@ -49,6 +57,8 @@ export default function AdminRecommendationsPage() {
       setLoadingMap(prev => ({ ...prev, [userId]: false }));
     }
   };
+
+  if (!currentUser?.isAdmin) return null;
 
   return (
     <div className="space-y-12">
@@ -105,7 +115,7 @@ export default function AdminRecommendationsPage() {
                         <div key={i} className="flex items-center justify-between p-3 bg-muted/20 border rounded-2xl hover:bg-white hover:border-primary/20 transition-all">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-white border relative overflow-hidden">
-                              <img src={food.imageURL} alt={food.name} className="object-cover w-full h-full" />
+                              <img src={food.imageURL || food.image} alt={food.name} className="object-cover w-full h-full" />
                             </div>
                             <div>
                               <p className="text-sm font-bold">{food.name}</p>

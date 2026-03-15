@@ -9,7 +9,6 @@ import {
   Eye, 
   Clock, 
   User, 
-  Store,
   Loader2,
   CheckCircle2
 } from 'lucide-react';
@@ -33,6 +32,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useAuth } from '@/lib/contexts/auth-context';
 import { collection, doc, updateDoc, query, orderBy } from 'firebase/firestore';
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -41,16 +41,23 @@ import { FirestorePermissionError } from '@/firebase/errors';
 
 export default function AdminOrdersPage() {
   const db = useFirestore();
+  const { user } = useAuth();
   const [search, setSearch] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   // Fetch Orders (Real-time)
-  const ordersQuery = useMemoFirebase(() => query(collection(db, 'orders'), orderBy('createdAt', 'desc')), [db]);
+  const ordersQuery = useMemoFirebase(() => {
+    if (!user?.isAdmin) return null;
+    return query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+  }, [db, user?.isAdmin]);
   const { data: orders, isLoading: ordersLoading } = useCollection(ordersQuery);
 
   // Fetch Users for lookups
-  const usersQuery = useMemoFirebase(() => collection(db, 'users'), [db]);
+  const usersQuery = useMemoFirebase(() => {
+    if (!user?.isAdmin) return null;
+    return collection(db, 'users');
+  }, [db, user?.isAdmin]);
   const { data: users } = useCollection(usersQuery);
 
   const handleUpdateStatus = (orderId: string, newStatus: string) => {
@@ -67,7 +74,7 @@ export default function AdminOrdersPage() {
   };
 
   const filteredOrders = orders?.filter(o => 
-    (o.orderId || o.id).toLowerCase().includes(search.toLowerCase()) ||
+    (o.orderId || o.id || '').toLowerCase().includes(search.toLowerCase()) ||
     users?.find(u => u.id === o.userId)?.displayName?.toLowerCase().includes(search.toLowerCase())
   ) || [];
 
@@ -81,6 +88,8 @@ export default function AdminOrdersPage() {
       default: return 'bg-slate-100 text-slate-700 border-slate-200';
     }
   };
+
+  if (!user?.isAdmin) return null;
 
   return (
     <div className="space-y-12 animate-in fade-in duration-700">
@@ -230,10 +239,10 @@ export default function AdminOrdersPage() {
               <div>
                 <DialogTitle className="text-3xl font-headline font-black">Order Breakdown</DialogTitle>
                 <DialogDescription className="text-white/70 font-bold mt-1">
-                  ID: #{(selectedOrder?.orderId || selectedOrder?.id)?.toUpperCase()}
+                  ID: #{(selectedOrder?.orderId || selectedOrder?.id || '').toUpperCase()}
                 </DialogDescription>
               </div>
-              <Badge className={cn("rounded-full px-4 py-1.5 font-black text-[10px] uppercase border-none bg-white", getStatusColor(selectedOrder?.orderStatus || selectedOrder?.status).split(' ')[1])}>
+              <Badge className={cn("rounded-full px-4 py-1.5 font-black text-[10px] uppercase border-none bg-white", getStatusColor(selectedOrder?.orderStatus || selectedOrder?.status || 'Order Placed').split(' ')[1])}>
                 {selectedOrder?.orderStatus || selectedOrder?.status || 'Processing'}
               </Badge>
             </div>
