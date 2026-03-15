@@ -84,10 +84,15 @@ export default function SignupPage() {
 
       router.push('/dashboard');
     } catch (error: any) {
+      console.error(error);
+      let message = error.message || "An unexpected error occurred during registration.";
+      if (error.code === 'auth/operation-not-allowed') {
+        message = "Email/Password registration is not enabled. Please enable it in the Firebase Console.";
+      }
       toast({
         variant: "destructive",
         title: "Signup Failed",
-        description: error.message || "An unexpected error occurred during registration."
+        description: message
       });
     } finally {
       setLoading(false);
@@ -156,7 +161,7 @@ export default function SignupPage() {
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Email Address</Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <Input 
                     id="email"
                     name="email"

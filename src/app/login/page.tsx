@@ -37,7 +37,8 @@ function LoginForm() {
       return;
     }
 
-    if (!email.includes('@')) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
       toast({
         variant: "destructive",
         title: "Invalid Email",
@@ -151,6 +152,8 @@ function LoginForm() {
         message = "Invalid email or password.";
       } else if (error.code === 'auth/invalid-email') {
         message = "The email address is badly formatted.";
+      } else if (error.code === 'auth/operation-not-allowed') {
+        message = "This login method is not enabled. Please enable it in the Firebase Console.";
       }
       toast({
         variant: "destructive",
@@ -199,10 +202,14 @@ function LoginForm() {
       router.push(callbackUrl);
     } catch (error: any) {
       console.error(error);
+      let message = error.message;
+      if (error.code === 'auth/operation-not-allowed') {
+        message = "Google Sign-In is not enabled. Please enable it in the Firebase Console.";
+      }
       toast({
         variant: "destructive",
         title: "Google Login Failed",
-        description: error.message
+        description: message
       });
     } finally {
       setLoading(false);
