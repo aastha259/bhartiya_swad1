@@ -26,6 +26,7 @@ import {
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { 
   Sheet, 
   SheetContent, 
@@ -81,9 +82,8 @@ export default function DashboardPage() {
       
       setLoadingRecs(true);
       try {
-        const ordersRef = collection(db, 'orders');
         const q = query(
-          ordersRef, 
+          collection(db, 'orders'), 
           where('userId', '==', user.uid), 
           orderBy('orderDate', 'desc'), 
           limit(5)
@@ -92,15 +92,15 @@ export default function DashboardPage() {
         
         const history: { name: string; category?: string }[] = [];
         for (const orderDoc of orderSnap.docs) {
-          const itemsRef = collection(db, 'orders', orderDoc.id, 'orderItems');
-          const itemsSnap = await getDocs(itemsRef);
-          itemsSnap.forEach(itemDoc => {
-            const itemData = itemDoc.data();
-            history.push({
-              name: itemData.foodName,
-              category: allDishes.find(f => f.id === itemData.dishId)?.category
+          const orderData = orderDoc.data();
+          if (orderData.items) {
+            orderData.items.forEach((item: any) => {
+              history.push({
+                name: item.foodName,
+                category: allDishes.find(f => f.id === item.dishId)?.category
+              });
             });
-          });
+          }
         }
 
         const result = await personalizedFoodRecommendations({
@@ -228,9 +228,11 @@ export default function DashboardPage() {
                         <span className="text-3xl font-headline font-black text-primary">₹{totalPrice}</span>
                       </div>
                     </div>
-                    <Button className="w-full h-16 bg-primary text-xl font-black rounded-3xl shadow-xl shadow-primary/20 group overflow-hidden" onClick={() => { alert("Order Placed!"); clearCart(); }}>
-                      <span className="relative z-10 flex items-center gap-2">Place Order <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" /></span>
-                    </Button>
+                    <Link href="/cart" className="w-full">
+                      <Button className="w-full h-16 bg-primary text-xl font-black rounded-3xl shadow-xl shadow-primary/20 group overflow-hidden">
+                        <span className="relative z-10 flex items-center justify-center gap-2">View Cart <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" /></span>
+                      </Button>
+                    </Link>
                   </SheetFooter>
                 )}
               </SheetContent>
