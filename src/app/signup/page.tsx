@@ -1,0 +1,230 @@
+
+"use client"
+
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { ChefHat, Mail, Lock, User, Phone, ArrowRight, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
+import { useAuth as useFirebaseService, useFirestore } from '@/firebase';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
+
+export default function SignupPage() {
+  const router = useRouter();
+  const auth = useFirebaseService();
+  const db = useFirestore();
+  const { toast } = useToast();
+  const [isMounted, setIsMounted] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: ''
+  });
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        variant: "destructive",
+        title: "Passwords mismatch",
+        description: "Please ensure your passwords are identical."
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // 1. Create user in Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      const user = userCredential.user;
+
+      // 2. Update Auth Profile with Display Name
+      await updateProfile(user, {
+        displayName: formData.fullName
+      });
+
+      // 3. Save additional data in Firestore
+      await setDoc(doc(db, 'users', user.uid), {
+        id: user.uid,
+        email: formData.email,
+        displayName: formData.fullName,
+        phone: formData.phone,
+        role: 'user',
+        totalOrders: 0,
+        totalMoneySpent: 0,
+        createdAt: serverTimestamp()
+      });
+
+      toast({
+        title: "Account Created!",
+        description: "Welcome to Bhartiya Swad. Let's get ordering!"
+      });
+
+      router.push('/dashboard');
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Signup Failed",
+        description: error.message || "An unexpected error occurred during registration."
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isMounted) return null;
+
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center p-6 relative overflow-hidden" suppressHydrationWarning>
+      {/* Background Pattern */}
+      <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none">
+        <div className="grid grid-cols-12 gap-4 h-full w-full rotate-12 scale-150">
+          {Array.from({ length: 48 }).map((_, i) => (
+            <ChefHat key={i} className="w-12 h-12" />
+          ))}
+        </div>
+      </div>
+
+      <Card className="w-full max-w-lg shadow-2xl relative z-10 border-none rounded-[2.5rem] overflow-hidden bg-white">
+        <CardHeader className="bg-primary text-white p-10 text-center">
+          <div className="w-20 h-20 bg-white/20 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl backdrop-blur-md">
+            <ChefHat className="w-12 h-12 text-white" />
+          </div>
+          <CardTitle className="text-4xl font-headline font-black tracking-tight">Join Bhartiya Swad</CardTitle>
+          <p className="text-white/80 mt-2 font-medium">Authentic Indian flavors are just a click away</p>
+        </CardHeader>
+        
+        <CardContent className="p-10">
+          <form onSubmit={handleSignup} className="space-y-6">
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="fullName" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Full Name</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
+                    <Input 
+                      id="fullName"
+                      name="fullName"
+                      placeholder="E.g. Arjun Sharma" 
+                      className="pl-10 h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-primary/20"
+                      value={formData.fullName}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Phone Number</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
+                    <Input 
+                      id="phone"
+                      name="phone"
+                      type="tel"
+                      placeholder="+91 00000 00000" 
+                      className="pl-10 h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-primary/20"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Email Address</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
+                  <Input 
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="name@example.com" 
+                    className="pl-10 h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-primary/20"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
+                    <Input 
+                      id="password"
+                      name="password"
+                      type="password"
+                      placeholder="••••••••" 
+                      className="pl-10 h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-primary/20"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Confirm Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
+                    <Input 
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      type="password"
+                      placeholder="••••••••" 
+                      className="pl-10 h-12 rounded-xl bg-muted/30 border-none focus-visible:ring-primary/20"
+                      value={formData.confirmPassword}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <Button 
+              type="submit"
+              className="w-full h-14 bg-primary hover:bg-primary/90 rounded-2xl font-black text-lg shadow-xl shadow-primary/20 transition-all active:scale-95 group"
+              disabled={loading}
+            >
+              {loading ? (
+                <Loader2 className="w-6 h-6 animate-spin" />
+              ) : (
+                <span className="flex items-center gap-2">
+                  Create Account <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </span>
+              )}
+            </Button>
+          </form>
+        </CardContent>
+
+        <CardFooter className="p-10 pt-0 text-center justify-center border-t border-dashed mt-4">
+          <p className="text-sm text-muted-foreground font-medium mt-6">
+            Already have an account? <Link href="/login" className="text-primary font-black hover:underline underline-offset-4">Sign In here</Link>
+          </p>
+        </CardFooter>
+      </Card>
+    </div>
+  );
+}

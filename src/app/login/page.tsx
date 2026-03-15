@@ -78,17 +78,16 @@ function LoginForm() {
           });
         }
       } else {
-        // Normal User Login (Anonymous for demo)
+        // Normal User Login
         if (typeof window !== 'undefined') {
           localStorage.removeItem('bhartiya_swad_admin');
         }
-        await signInAnonymously(auth);
+        await signInWithEmailAndPassword(auth, email, password);
         toast({
           title: "Login Successful",
           description: "Welcome back to Bhartiya Swad."
         });
         
-        // Redirect to callbackUrl if present, otherwise dashboard
         router.push(callbackUrl);
       }
     } catch (error: any) {
@@ -150,9 +149,8 @@ function LoginForm() {
                 <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
                 <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">Or continue with</span></div>
               </div>
-              <Button variant="outline" className="w-full h-12 rounded-xl border-2 font-bold group">
-                <Chrome className="w-5 h-5 mr-2 group-hover:text-primary transition-colors" />
-                Google
+              <Button variant="outline" className="w-full h-12 rounded-xl border-2 font-bold group" onClick={() => signInAnonymously(auth)}>
+                Anonymous Access
               </Button>
             </div>
           </TabsContent>
@@ -197,7 +195,7 @@ function LoginForm() {
       </CardContent>
       <CardFooter className="p-8 pt-0 text-center justify-center">
         <p className="text-sm text-muted-foreground">
-          Don't have an account? <Link href="/login" className="text-primary font-bold hover:underline">Create one</Link>
+          Don't have an account? <Link href="/signup" className="text-primary font-bold hover:underline">Create one</Link>
         </p>
       </CardFooter>
     </Card>
