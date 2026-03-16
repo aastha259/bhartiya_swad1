@@ -24,9 +24,9 @@ export default function AdminCustomersPage() {
   const { user } = useAuth();
 
   const usersQuery = useMemoFirebase(() => {
-    if (!user?.isAdmin) return null;
+    if (!user?.isAdmin || user.email !== 'xyz@admin.com') return null;
     return collection(db, 'users');
-  }, [db, user?.isAdmin]);
+  }, [db, user?.isAdmin, user?.email]);
   const { data: users } = useCollection(usersQuery);
 
   const customerData = users?.map(u => ({
@@ -39,7 +39,7 @@ export default function AdminCustomersPage() {
 
   const chartData = customerData.slice(0, 10);
 
-  if (!user?.isAdmin) return null;
+  if (!user?.isAdmin || user.email !== 'xyz@admin.com') return null;
 
   return (
     <div className="space-y-12">

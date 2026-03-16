@@ -19,15 +19,15 @@ export default function AdminRecommendationsPage() {
   const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({});
 
   const usersQuery = useMemoFirebase(() => {
-    if (!currentUser?.isAdmin) return null;
+    if (!currentUser?.isAdmin || currentUser.email !== 'xyz@admin.com') return null;
     return collection(db, 'users');
-  }, [db, currentUser?.isAdmin]);
+  }, [db, currentUser?.isAdmin, currentUser?.email]);
   const { data: users } = useCollection(usersQuery);
 
   const dishesQuery = useMemoFirebase(() => {
-    if (!currentUser?.isAdmin) return null;
+    if (!currentUser?.isAdmin || currentUser.email !== 'xyz@admin.com') return null;
     return collection(db, 'dishes');
-  }, [db, currentUser?.isAdmin]);
+  }, [db, currentUser?.isAdmin, currentUser?.email]);
   const { data: dishes } = useCollection(dishesQuery);
 
   const generateForUser = async (userId: string, userName: string) => {
@@ -58,7 +58,7 @@ export default function AdminRecommendationsPage() {
     }
   };
 
-  if (!currentUser?.isAdmin) return null;
+  if (!currentUser?.isAdmin || currentUser.email !== 'xyz@admin.com') return null;
 
   return (
     <div className="space-y-12">

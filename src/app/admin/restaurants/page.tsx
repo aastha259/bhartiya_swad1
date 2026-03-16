@@ -54,16 +54,16 @@ export default function AdminRestaurantsPage() {
 
   // Fetch Restaurants
   const restaurantsQuery = useMemoFirebase(() => {
-    if (!user?.isAdmin) return null;
+    if (!user?.isAdmin || user.email !== 'xyz@admin.com') return null;
     return collection(db, 'restaurants');
-  }, [db, user?.isAdmin]);
+  }, [db, user?.isAdmin, user?.email]);
   const { data: restaurants, isLoading } = useCollection(restaurantsQuery);
 
   // Fetch Dishes
   const dishesQuery = useMemoFirebase(() => {
-    if (!user?.isAdmin) return null;
+    if (!user?.isAdmin || user.email !== 'xyz@admin.com') return null;
     return collection(db, 'dishes');
-  }, [db, user?.isAdmin]);
+  }, [db, user?.isAdmin, user?.email]);
   const { data: allDishes } = useCollection(dishesQuery);
 
   const filteredRestaurants = restaurants?.filter(r => 
@@ -100,7 +100,7 @@ export default function AdminRestaurantsPage() {
     }
   };
 
-  if (!user?.isAdmin) return null;
+  if (!user?.isAdmin || user.email !== 'xyz@admin.com') return null;
 
   return (
     <div className="space-y-12 animate-in fade-in duration-700">

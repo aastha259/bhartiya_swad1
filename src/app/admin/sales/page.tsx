@@ -27,15 +27,15 @@ export default function AdminSalesPage() {
   const { user } = useAuth();
 
   const ordersQuery = useMemoFirebase(() => {
-    if (!user?.isAdmin) return null;
+    if (!user?.isAdmin || user.email !== 'xyz@admin.com') return null;
     return collection(db, 'orders');
-  }, [db, user?.isAdmin]);
+  }, [db, user?.isAdmin, user?.email]);
   const { data: orders } = useCollection(ordersQuery);
 
   const dishesQuery = useMemoFirebase(() => {
-    if (!user?.isAdmin) return null;
+    if (!user?.isAdmin || user.email !== 'xyz@admin.com') return null;
     return collection(db, 'dishes');
-  }, [db, user?.isAdmin]);
+  }, [db, user?.isAdmin, user?.email]);
   const { data: dishes } = useCollection(dishesQuery);
 
   const dailySalesData = useMemo(() => {
@@ -45,7 +45,7 @@ export default function AdminSalesPage() {
       const label = format(date, 'MMM dd');
       const revenue = orders
         .filter(o => o.orderDate && isSameDay(parseISO(o.orderDate), date))
-        .reduce((acc, o) => acc + (o.totalPrice || o.totalAmount || 0), 0);
+        .reduce((acc, o) => acc + (o.totalPrice || 0), 0);
       return { name: label, sales: revenue };
     });
   }, [orders]);
@@ -58,7 +58,7 @@ export default function AdminSalesPage() {
       const label = `Week ${format(weekStart, 'MM/dd')}`;
       const revenue = orders
         .filter(o => o.orderDate && isSameWeek(parseISO(o.orderDate), weekStart))
-        .reduce((acc, o) => acc + (o.totalPrice || o.totalAmount || 0), 0);
+        .reduce((acc, o) => acc + (o.totalPrice || 0), 0);
       return { name: label, revenue };
     });
   }, [orders]);
@@ -70,7 +70,7 @@ export default function AdminSalesPage() {
       .slice(0, 8);
   }, [dishes]);
 
-  if (!user?.isAdmin) return null;
+  if (!user?.isAdmin || user.email !== 'xyz@admin.com') return null;
 
   return (
     <div className="space-y-12 animate-in fade-in duration-700">
