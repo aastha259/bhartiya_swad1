@@ -74,13 +74,14 @@ export default function DashboardPage() {
   }, [db]);
   const { data: topRatedDishes } = useCollection(topRatedQuery);
 
-  // User Order History Query
+  // User Order History Query - SECURED with mandatory userId filter for Security Rules compliance
   const ordersQuery = useMemoFirebase(() => {
     if (!user?.uid) return null;
     return query(
       collection(db, 'orders'),
       where('userId', '==', user.uid),
-      orderBy('createdAt', 'desc')
+      orderBy('createdAt', 'desc'),
+      limit(2) // Preview of latest 2 orders
     );
   }, [db, user?.uid]);
   const { data: userOrders, isLoading: ordersLoading } = useCollection(ordersQuery);
@@ -364,10 +365,17 @@ export default function DashboardPage() {
               <div>
                 <h2 className="text-4xl font-headline font-black flex items-center gap-4 text-foreground">
                   <ShoppingBag className="w-10 h-10 text-primary" /> 
-                  Order History
+                  Recent Orders
                 </h2>
-                <p className="text-muted-foreground font-medium mt-1">Review your past culinary journeys.</p>
+                <p className="text-muted-foreground font-medium mt-1">Keep track of your current culinary journeys.</p>
               </div>
+              {userOrders && userOrders.length > 0 && (
+                <Link href="/orders">
+                  <Button variant="ghost" className="font-bold text-primary group">
+                    View All <ChevronRight className="ml-1 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </Link>
+              )}
             </div>
 
             {ordersLoading ? (
@@ -387,7 +395,7 @@ export default function DashboardPage() {
                           <p className="font-mono text-xs font-black text-primary">#{order.orderId?.slice(0, 12).toUpperCase() || order.id.slice(0, 12).toUpperCase()}</p>
                         </div>
                         <Badge className={cn(
-                          "rounded-full px-4 py-1 font-black text-[10px] uppercase tracking-wider",
+                          "rounded-full px-4 py-1 font-black text-[10px] uppercase tracking-wider border-none",
                           order.orderStatus === 'Delivered' ? 'bg-green-100 text-green-700' : 'bg-primary/10 text-primary'
                         )}>
                           {order.orderStatus || 'Processing'}
@@ -399,7 +407,7 @@ export default function DashboardPage() {
                         <div className="space-y-2">
                           {order.items?.map((item: any, idx: number) => (
                             <div key={idx} className="flex justify-between items-center text-sm">
-                              <span className="font-bold text-foreground">
+                              <span className="font-bold text-foreground truncate max-w-[150px]">
                                 {item.foodName} <span className="text-muted-foreground text-xs ml-1">x{item.quantity}</span>
                               </span>
                               <span className="font-black text-muted-foreground">₹{item.subtotal}</span>
@@ -408,24 +416,7 @@ export default function DashboardPage() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4 py-4 border-y border-dashed">
-                        <div className="space-y-1">
-                          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-1">
-                            <CreditCard className="w-3 h-3" /> Payment
-                          </p>
-                          <p className="text-xs font-bold text-foreground capitalize">{order.paymentMethod} ({order.paymentStatus})</p>
-                        </div>
-                        <div className="space-y-1 text-right">
-                          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-1 justify-end">
-                            <Clock className="w-3 h-3" /> Date
-                          </p>
-                          <p className="text-xs font-bold text-foreground">
-                            {order.orderDate ? format(parseISO(order.orderDate), 'MMM dd, yyyy') : 'N/A'}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex justify-between items-center pt-2">
+                      <div className="flex justify-between items-center pt-4 border-t border-dashed">
                         <div className="flex flex-col">
                           <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Total Paid</p>
                           <p className="text-3xl font-headline font-black text-foreground">₹{order.totalPrice}</p>
