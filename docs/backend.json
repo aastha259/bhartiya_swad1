@@ -98,6 +98,20 @@
         "orderDate": { "type": "string", "format": "date-time" },
         "createdAt": { "type": "object" }
       }
+    },
+    "Post": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Post",
+      "type": "object",
+      "description": "Represents a social post or community update.",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "authorId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "content", "authorId", "createdAt"]
     }
   },
   "auth": {
@@ -123,6 +137,10 @@
     "/orders/{orderId}": {
       "schema": "Order",
       "description": "Stores all customer orders."
+    },
+    "/posts/{postId}": {
+      "schema": "Post",
+      "description": "Stores community posts and updates."
     }
   }
 }

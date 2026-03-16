@@ -20,6 +20,13 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    // POSTS: Authenticated users can read (list/get). Only owners or admins can write.
+    match /posts/{postId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update, delete: if isOwner(resource.data.authorId) || isAdmin();
+    }
+
     // DISHES: Publicly viewable menu items.
     match /dishes/{dishId} {
       allow read: if true;
