@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState } from 'react';
@@ -46,17 +45,17 @@ export default function AdminOrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
-  // Strict email guard: Skip query initialization entirely if the email doesn't match xyz@admin.com
+  // Strict email guard
   const isAuthorized = user?.isAdmin && user.email === 'xyz@admin.com';
 
-  // Fetch Orders (Real-time)
+  // Fetch Orders
   const ordersQuery = useMemoFirebase(() => {
     if (!isAuthorized) return null;
     return query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
   }, [db, isAuthorized]);
   const { data: orders, isLoading: ordersLoading } = useCollection(ordersQuery);
 
-  // Fetch Users for lookups
+  // Fetch Users
   const usersQuery = useMemoFirebase(() => {
     if (!isAuthorized) return null;
     return collection(db, 'users');
@@ -177,7 +176,7 @@ export default function AdminOrdersPage() {
                     </TableCell>
                     <TableCell>
                       <Select 
-                        defaultValue={orderStatus} 
+                        value={orderStatus} 
                         onValueChange={(val) => handleUpdateStatus(order.id, val)}
                       >
                         <SelectTrigger className={cn("w-44 h-10 rounded-full font-black text-[10px] uppercase tracking-wider border-2", getStatusColor(orderStatus))}>
@@ -234,7 +233,6 @@ export default function AdminOrdersPage() {
         </div>
       </Card>
 
-      {/* Order Details Dialog */}
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
         <DialogContent className="sm:max-w-[600px] rounded-[2.5rem] p-0 overflow-hidden border-none bg-[#FDFCFB]">
           <DialogHeader className="bg-primary p-10 text-white">

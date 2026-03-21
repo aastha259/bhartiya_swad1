@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -121,8 +120,8 @@ export default function DashboardPage() {
         setLoadingRecs(false);
       }
     }
-    if (mounted && allDishes && user) getPersonalizedRecommendations();
-  }, [user?.uid, allDishes, db, mounted]);
+    if (mounted && allDishes && allDishes.length > 0 && user) getPersonalizedRecommendations();
+  }, [user?.uid, allDishes?.length, db, mounted]);
 
   if (!mounted || loading || !user) {
     return (
@@ -305,7 +304,6 @@ export default function DashboardPage() {
         </aside>
 
         <main className="flex-1 p-8 md:p-12 space-y-24 min-w-0">
-          {/* Hero Section */}
           <section className="relative rounded-[3rem] overflow-hidden bg-primary/10 border border-primary/5 p-10 md:p-16 flex flex-col md:flex-row items-center justify-between gap-12 group">
             <div className="relative z-10 space-y-6 max-w-lg">
               <Badge className="bg-primary text-white border-none rounded-full px-4 py-1.5 font-black uppercase tracking-widest text-[10px]">Premium Experience</Badge>
@@ -339,7 +337,6 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          {/* Quick Access / My Orders */}
           <section className="space-y-10">
             <div className="flex items-center justify-between">
               <div>
@@ -404,7 +401,6 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          {/* Trending Section */}
           {trendingDishes && trendingDishes.length > 0 && (
             <section className="space-y-10">
               <div className="flex items-center justify-between">
@@ -427,7 +423,6 @@ export default function DashboardPage() {
             </section>
           )}
 
-          {/* Top Rated Section */}
           {topRatedDishes && topRatedDishes.length > 0 && (
             <section className="space-y-10">
               <div className="flex items-center justify-between">
@@ -445,7 +440,6 @@ export default function DashboardPage() {
             </section>
           )}
 
-          {/* Personalized Recommendations Section */}
           {(recommendations.length > 0 || loadingRecs) && (
             <section className="bg-muted/30 p-12 md:p-16 rounded-[4rem] border border-primary/5 relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>

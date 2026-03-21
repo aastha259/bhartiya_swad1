@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -115,8 +114,8 @@ export default function MenuPage() {
         setLoadingRecs(false);
       }
     }
-    if (mounted && allDishes && user) getPersonalizedRecommendations();
-  }, [user?.uid, allDishes, db, mounted]);
+    if (mounted && allDishes && allDishes.length > 0 && user) getPersonalizedRecommendations();
+  }, [user?.uid, allDishes?.length, db, mounted]);
 
   const filteredDishes = useMemo(() => {
     return (allDishes || []).filter(dish => {
