@@ -21,11 +21,13 @@ import {
   Plus,
   Minus,
   Trash2,
+  ShoppingBag,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 import { 
   Sheet, 
   SheetContent, 
@@ -136,7 +138,7 @@ export default function DashboardPage() {
   const sidebarLinks = [
     { name: 'Dashboard', href: '/dashboard', active: true, icon: Home },
     { name: 'Full Menu', href: '/menu', active: false, icon: Utensils },
-    { name: 'My Orders', href: '/orders', active: false, icon: ShoppingCart },
+    { name: 'My Orders', href: '/orders', active: false, icon: ShoppingBag },
     { name: 'Favorites', href: '/favorites', active: false, icon: Heart },
   ];
 
@@ -334,6 +336,71 @@ export default function DashboardPage() {
                   <p className="font-black text-foreground text-sm">Fastest Delivery</p>
                 </div>
               </div>
+            </div>
+          </section>
+
+          {/* Quick Access / My Orders */}
+          <section className="space-y-10">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-4xl font-headline font-black flex items-center gap-4 text-foreground">
+                  <ShoppingBag className="w-10 h-10 text-primary" /> 
+                  Your Journey
+                </h2>
+                <p className="text-muted-foreground font-medium mt-1">Quick access to your activity and favorites.</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              <Link href="/orders" className="group block">
+                <Card className="p-8 h-full bg-white border border-primary/5 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 rounded-[2.5rem] flex flex-col items-center text-center gap-6">
+                  <div className="w-20 h-20 rounded-[2rem] bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all duration-500 shadow-inner">
+                    <ShoppingBag className="w-10 h-10" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-2xl font-headline font-black text-foreground">My Orders</h3>
+                    <p className="text-sm text-muted-foreground font-medium leading-relaxed">
+                      Track your live orders or browse through your delicious history.
+                    </p>
+                  </div>
+                  <Button variant="ghost" className="mt-auto font-black text-primary group-hover:translate-x-2 transition-transform">
+                    View History <ChevronRight className="ml-2 w-4 h-4" />
+                  </Button>
+                </Card>
+              </Link>
+
+              <Link href="/menu" className="group block">
+                <Card className="p-8 h-full bg-white border border-primary/5 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 rounded-[2.5rem] flex flex-col items-center text-center gap-6">
+                  <div className="w-20 h-20 rounded-[2rem] bg-accent/10 flex items-center justify-center text-accent group-hover:bg-accent group-hover:text-white transition-all duration-500 shadow-inner">
+                    <Utensils className="w-10 h-10" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-2xl font-headline font-black text-foreground">Full Menu</h3>
+                    <p className="text-sm text-muted-foreground font-medium leading-relaxed">
+                      Explore over 500+ authentic Indian delicacies curated for you.
+                    </p>
+                  </div>
+                  <Button variant="ghost" className="mt-auto font-black text-accent group-hover:translate-x-2 transition-transform">
+                    Explore Now <ChevronRight className="ml-2 w-4 h-4" />
+                  </Button>
+                </Card>
+              </Link>
+
+              <Link href="/favorites" className="group block">
+                <Card className="p-8 h-full bg-white border border-primary/5 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 rounded-[2.5rem] flex flex-col items-center text-center gap-6">
+                  <div className="w-20 h-20 rounded-[2rem] bg-pink-100 flex items-center justify-center text-pink-600 group-hover:bg-pink-600 group-hover:text-white transition-all duration-500 shadow-inner">
+                    <Heart className="w-10 h-10" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-2xl font-headline font-black text-foreground">Favorites</h3>
+                    <p className="text-sm text-muted-foreground font-medium leading-relaxed">
+                      Quickly re-order the dishes that won your heart.
+                    </p>
+                  </div>
+                  <Button variant="ghost" className="mt-auto font-black text-pink-600 group-hover:translate-x-2 transition-transform">
+                    See Favorites <ChevronRight className="ml-2 w-4 h-4" />
+                  </Button>
+                </Card>
+              </Link>
             </div>
           </section>
 
