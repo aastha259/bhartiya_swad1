@@ -23,10 +23,13 @@ export default function AdminCustomersPage() {
   const db = useFirestore();
   const { user } = useAuth();
 
+  // Strict authorized email guard
+  const isAuthorized = user?.isAdmin && user.email === 'xyz@admin.com';
+
   const usersQuery = useMemoFirebase(() => {
-    if (!user?.isAdmin || user.email !== 'xyz@admin.com') return null;
+    if (!isAuthorized) return null;
     return collection(db, 'users');
-  }, [db, user?.isAdmin, user?.email]);
+  }, [db, isAuthorized]);
   const { data: users } = useCollection(usersQuery);
 
   const customerData = users?.map(u => ({
@@ -39,7 +42,7 @@ export default function AdminCustomersPage() {
 
   const chartData = customerData.slice(0, 10);
 
-  if (!user?.isAdmin || user.email !== 'xyz@admin.com') return null;
+  if (!isAuthorized) return null;
 
   return (
     <div className="space-y-12">

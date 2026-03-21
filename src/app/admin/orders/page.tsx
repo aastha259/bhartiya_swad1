@@ -46,18 +46,21 @@ export default function AdminOrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
-  // Fetch Orders (Real-time) - Secured with authorized email check
+  // Strict email guard: Skip query initialization entirely if the email doesn't match xyz@admin.com
+  const isAuthorized = user?.isAdmin && user.email === 'xyz@admin.com';
+
+  // Fetch Orders (Real-time)
   const ordersQuery = useMemoFirebase(() => {
-    if (!user?.isAdmin || user.email !== 'xyz@admin.com') return null;
+    if (!isAuthorized) return null;
     return query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
-  }, [db, user?.isAdmin, user?.email]);
+  }, [db, isAuthorized]);
   const { data: orders, isLoading: ordersLoading } = useCollection(ordersQuery);
 
   // Fetch Users for lookups
   const usersQuery = useMemoFirebase(() => {
-    if (!user?.isAdmin || user.email !== 'xyz@admin.com') return null;
+    if (!isAuthorized) return null;
     return collection(db, 'users');
-  }, [db, user?.isAdmin, user?.email]);
+  }, [db, isAuthorized]);
   const { data: users } = useCollection(usersQuery);
 
   const handleUpdateStatus = (orderId: string, newStatus: string) => {
@@ -89,7 +92,7 @@ export default function AdminOrdersPage() {
     }
   };
 
-  if (!user?.isAdmin || user.email !== 'xyz@admin.com') return null;
+  if (!isAuthorized) return null;
 
   return (
     <div className="space-y-12 animate-in fade-in duration-700">

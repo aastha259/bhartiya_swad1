@@ -27,16 +27,18 @@ export default function AdminSalesPage() {
   const { user } = useAuth();
 
   // Strict email validation before initiating collection queries
+  const isAuthorized = user?.isAdmin && user.email === 'xyz@admin.com';
+
   const ordersQuery = useMemoFirebase(() => {
-    if (!user?.isAdmin || user.email !== 'xyz@admin.com') return null;
+    if (!isAuthorized) return null;
     return collection(db, 'orders');
-  }, [db, user?.isAdmin, user?.email]);
+  }, [db, isAuthorized]);
   const { data: orders } = useCollection(ordersQuery);
 
   const dishesQuery = useMemoFirebase(() => {
-    if (!user?.isAdmin || user.email !== 'xyz@admin.com') return null;
+    if (!isAuthorized) return null;
     return collection(db, 'dishes');
-  }, [db, user?.isAdmin, user?.email]);
+  }, [db, isAuthorized]);
   const { data: dishes } = useCollection(dishesQuery);
 
   const dailySalesData = useMemo(() => {
@@ -71,7 +73,7 @@ export default function AdminSalesPage() {
       .slice(0, 8);
   }, [dishes]);
 
-  if (!user?.isAdmin || user.email !== 'xyz@admin.com') return null;
+  if (!isAuthorized) return null;
 
   return (
     <div className="space-y-12 animate-in fade-in duration-700">

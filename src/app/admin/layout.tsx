@@ -17,7 +17,8 @@ import {
   User as UserIcon,
   ShoppingBag,
   Store,
-  Menu
+  Menu,
+  Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,7 +33,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     if (!loading) {
-      if (!user || !user.isAdmin) {
+      // Airtight check: If the user is not authenticated or the email is NOT the authorized admin, kick them out.
+      if (!user || !user.isAdmin || user.email !== 'xyz@admin.com') {
+        // Clear potential stale admin session flag
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('bhartiya_swad_admin');
+        }
         router.push('/');
       }
     }
@@ -47,15 +53,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     </div>
   );
   
-  if (!user || !user.isAdmin) return null;
+  // Guard against brief race condition render
+  if (!user || !user.isAdmin || user.email !== 'xyz@admin.com') return null;
 
   const navItems = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
-    { name: 'Sales Analytics', href: '/admin/sales', icon: BarChart3 },
-    { name: 'Customers', href: '/admin/customers', icon: Users },
-    { name: 'Restaurants', href: '/admin/restaurants', icon: Store },
-    { name: 'Orders', href: '/admin/orders', icon: ShoppingBag },
-    { name: 'Database', href: '/admin/database', icon: Database },
+    { name: 'Sales Intelligence', href: '/admin/sales', icon: BarChart3 },
+    { name: 'Customer Insights', href: '/admin/customers', icon: Users },
+    { name: 'Partner Network', href: '/admin/restaurants', icon: Store },
+    { name: 'Order Management', href: '/admin/orders', icon: ShoppingBag },
+    { name: 'AI Recommendations', href: '/admin/recommendations', icon: Sparkles },
+    { name: 'Mega Repository', href: '/admin/database', icon: Database },
   ];
 
   return (
@@ -120,7 +128,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="relative w-full max-w-md hidden sm:block">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input 
-                placeholder="Search database..." 
+                placeholder="Search hub..." 
                 className="pl-10 h-11 bg-muted/30 border-none rounded-xl focus-visible:ring-1 focus-visible:ring-primary transition-all"
               />
             </div>
@@ -134,11 +142,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             
             <div className="flex items-center gap-3 pl-6 border-l ml-4">
               <div className="text-right hidden sm:block">
-                <p className="text-sm font-black text-foreground">{user.displayName || 'Administrator'}</p>
+                <p className="text-sm font-black text-foreground">{user?.displayName || 'Administrator'}</p>
                 <p className="text-[10px] text-accent font-black uppercase tracking-widest">System Admin</p>
               </div>
               <Avatar className="h-10 w-10 border-2 border-primary/20 shadow-sm">
-                <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`} />
+                <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.uid}`} />
                 <AvatarFallback><UserIcon /></AvatarFallback>
               </Avatar>
             </div>

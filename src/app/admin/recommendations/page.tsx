@@ -18,16 +18,19 @@ export default function AdminRecommendationsPage() {
   const [activeRecs, setActiveRecs] = useState<Record<string, any[]>>({});
   const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({});
 
+  // Strict authorized email guard
+  const isAuthorized = currentUser?.isAdmin && currentUser.email === 'xyz@admin.com';
+
   const usersQuery = useMemoFirebase(() => {
-    if (!currentUser?.isAdmin || currentUser.email !== 'xyz@admin.com') return null;
+    if (!isAuthorized) return null;
     return collection(db, 'users');
-  }, [db, currentUser?.isAdmin, currentUser?.email]);
+  }, [db, isAuthorized]);
   const { data: users } = useCollection(usersQuery);
 
   const dishesQuery = useMemoFirebase(() => {
-    if (!currentUser?.isAdmin || currentUser.email !== 'xyz@admin.com') return null;
+    if (!isAuthorized) return null;
     return collection(db, 'dishes');
-  }, [db, currentUser?.isAdmin, currentUser?.email]);
+  }, [db, isAuthorized]);
   const { data: dishes } = useCollection(dishesQuery);
 
   const generateForUser = async (userId: string, userName: string) => {
@@ -58,7 +61,7 @@ export default function AdminRecommendationsPage() {
     }
   };
 
-  if (!currentUser?.isAdmin || currentUser.email !== 'xyz@admin.com') return null;
+  if (!isAuthorized) return null;
 
   return (
     <div className="space-y-12">

@@ -36,23 +36,25 @@ export default function AdminDashboardPage() {
   const db = useFirestore();
   const { user } = useAuth();
 
-  // Airtight check: only initiate collection queries if verified admin email matches context
+  // Strict email guard: Skip query initialization entirely if the email doesn't match xyz@admin.com
+  const isAuthorized = user?.isAdmin && user.email === 'xyz@admin.com';
+
   const ordersQuery = useMemoFirebase(() => {
-    if (!user?.isAdmin || user.email !== 'xyz@admin.com') return null;
+    if (!isAuthorized) return null;
     return collection(db, 'orders');
-  }, [db, user?.isAdmin, user?.email]);
+  }, [db, isAuthorized]);
   const { data: orders } = useCollection(ordersQuery);
 
   const usersQuery = useMemoFirebase(() => {
-    if (!user?.isAdmin || user.email !== 'xyz@admin.com') return null;
+    if (!isAuthorized) return null;
     return collection(db, 'users');
-  }, [db, user?.isAdmin, user?.email]);
+  }, [db, isAuthorized]);
   const { data: users } = useCollection(usersQuery);
 
   const restaurantsQuery = useMemoFirebase(() => {
-    if (!user?.isAdmin || user.email !== 'xyz@admin.com') return null;
+    if (!isAuthorized) return null;
     return collection(db, 'restaurants');
-  }, [db, user?.isAdmin, user?.email]);
+  }, [db, isAuthorized]);
   const { data: restaurants } = useCollection(restaurantsQuery);
 
   const stats = useMemo(() => {
@@ -122,7 +124,8 @@ export default function AdminDashboardPage() {
     }).slice(0, 5);
   }, [orders]);
 
-  if (!user?.isAdmin || user.email !== 'xyz@admin.com') return null;
+  // Final guard to prevent unauthorized UI from even attempting to render hooks results
+  if (!isAuthorized) return null;
 
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -229,7 +232,7 @@ export default function AdminDashboardPage() {
             </TableHeader>
             <TableBody>
               {recentOrders.map((order) => (
-                <TableRow key={order.id} className="hover:bg-muted/5 transition-colors border-b last:border-none">
+                <TableRow key={order.id} className="hover:bg-muted/5 transition-colors border-b last:border-none group">
                   <TableCell className="px-10 font-mono text-xs font-bold text-muted-foreground">#{(order.orderId || order.id).slice(0, 8).toUpperCase()}</TableCell>
                   <TableCell className="font-black text-primary text-lg">₹{(order.totalPrice || 0).toLocaleString()}</TableCell>
                   <TableCell>

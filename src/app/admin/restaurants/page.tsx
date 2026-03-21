@@ -52,18 +52,21 @@ export default function AdminRestaurantsPage() {
   const [editingRestaurant, setEditingRestaurant] = useState<any>(null);
   const [viewingMenu, setViewingMenu] = useState<any>(null);
 
+  // Strict authorized email guard
+  const isAuthorized = user?.isAdmin && user.email === 'xyz@admin.com';
+
   // Fetch Restaurants
   const restaurantsQuery = useMemoFirebase(() => {
-    if (!user?.isAdmin || user.email !== 'xyz@admin.com') return null;
+    if (!isAuthorized) return null;
     return collection(db, 'restaurants');
-  }, [db, user?.isAdmin, user?.email]);
+  }, [db, isAuthorized]);
   const { data: restaurants, isLoading } = useCollection(restaurantsQuery);
 
   // Fetch Dishes
   const dishesQuery = useMemoFirebase(() => {
-    if (!user?.isAdmin || user.email !== 'xyz@admin.com') return null;
+    if (!isAuthorized) return null;
     return collection(db, 'dishes');
-  }, [db, user?.isAdmin, user?.email]);
+  }, [db, isAuthorized]);
   const { data: allDishes } = useCollection(dishesQuery);
 
   const filteredRestaurants = restaurants?.filter(r => 
@@ -100,7 +103,7 @@ export default function AdminRestaurantsPage() {
     }
   };
 
-  if (!user?.isAdmin || user.email !== 'xyz@admin.com') return null;
+  if (!isAuthorized) return null;
 
   return (
     <div className="space-y-12 animate-in fade-in duration-700">
