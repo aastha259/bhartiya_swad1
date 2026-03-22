@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { ArrowRight, ChefHat, Truck, Clock, Heart } from 'lucide-react';
+import { ArrowRight, ChefHat, Truck, Clock, Heart, Pizza, Utensils, Coffee } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 // Dynamically import ThreeBackground with SSR disabled to prevent chunk loading issues and hydration mismatches
@@ -17,6 +17,18 @@ export default function LandingPage() {
     <div className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden selection:bg-primary selection:text-white">
       <ThreeBackground />
       
+      {/* Decorative Animated Elements */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden -z-10">
+        <div className="absolute top-[15%] left-[10%] w-64 h-64 bg-primary/10 rounded-full blur-3xl animate-float-slow opacity-60" style={{ animationDelay: '0s' }} />
+        <div className="absolute bottom-[20%] right-[5%] w-80 h-80 bg-accent/10 rounded-full blur-3xl animate-drift-slow opacity-70" style={{ animationDelay: '-2s' }} />
+        <div className="absolute top-[40%] right-[15%] w-48 h-48 bg-primary/5 rounded-full blur-2xl animate-rotate-slow opacity-60" style={{ animationDelay: '-4s' }} />
+        
+        {/* Abstract Floating Icons */}
+        <Pizza className="absolute top-[20%] right-[20%] w-12 h-12 text-primary/20 animate-rotate-slow" style={{ animationDelay: '-1s' }} />
+        <Utensils className="absolute bottom-[30%] left-[15%] w-10 h-10 text-accent/20 animate-drift-slow" style={{ animationDelay: '-3s' }} />
+        <Coffee className="absolute top-[60%] left-[10%] w-14 h-14 text-primary/15 animate-float-slow" style={{ animationDelay: '-5s' }} />
+      </div>
+
       <header className="fixed top-0 left-0 w-full p-6 flex justify-between items-center z-50">
         <div className="flex items-center gap-2">
           <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg">
