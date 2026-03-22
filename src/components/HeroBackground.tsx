@@ -27,22 +27,27 @@ export default function HeroBackground() {
 
   const layers = [
     {
-      id: 'bg-blobs',
-      factor: 0.15,
+      id: 'bg-glows',
+      factor: 0.1,
       elements: [
-        { color: 'bg-primary/5', size: 'w-[600px] h-[600px]', pos: 'top-[-15%] left-[-10%]' },
-        { color: 'bg-accent/5', size: 'w-[500px] h-[500px]', pos: 'bottom-[-10%] right-[-5%]' },
+        // Saffron glow top-left
+        { color: 'bg-[#FF9933]/15', size: 'w-[800px] h-[800px]', pos: 'top-[-20%] left-[-10%]' },
+        // Light orange glow bottom-right
+        { color: 'bg-[#FFB347]/15', size: 'w-[700px] h-[700px]', pos: 'bottom-[-15%] right-[-5%]' },
+        // Cream central highlight
+        { color: 'bg-[#FFF5E1]/20', size: 'w-[900px] h-[900px]', pos: 'top-[10%] left-[15%]' },
       ],
-      blur: 'blur-3xl'
+      blur: 'blur-[120px]'
     },
     {
-      id: 'mid-blobs',
-      factor: 0.4,
+      id: 'mid-glows',
+      factor: 0.3,
       elements: [
-        { color: 'bg-primary/5', size: 'w-[350px] h-[350px]', pos: 'top-[25%] right-[8%]' },
-        { color: 'bg-accent/5', size: 'w-[300px] h-[300px]', pos: 'bottom-[20%] left-[10%]' },
+        // Subtle accent glows behind elements
+        { color: 'bg-[#FF9933]/10', size: 'w-[400px] h-[400px]', pos: 'top-[25%] right-[15%]' },
+        { color: 'bg-[#FFB347]/10', size: 'w-[350px] h-[350px]', pos: 'bottom-[30%] left-[20%]' },
       ],
-      blur: 'blur-2xl'
+      blur: 'blur-[80px]'
     }
   ];
 
@@ -57,9 +62,12 @@ export default function HeroBackground() {
 
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10 bg-[#FDFCFB]">
+      {/* Base warm radial gradient */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#FFF5E1_0%,_#FDFCFB_70%)]" />
+      
       <ThreeBackground />
       
-      {/* Background Gradient Layers */}
+      {/* Background Glow Layers */}
       {layers.map((layer) => (
         <div 
           key={layer.id}
@@ -72,7 +80,7 @@ export default function HeroBackground() {
           {layer.elements.map((el, idx) => (
             <div 
               key={idx} 
-              className={`absolute ${el.pos} ${layer.blur} opacity-40 transition-all duration-1000`}
+              className={`absolute ${el.pos} ${layer.blur} opacity-60 transition-all duration-1000`}
             >
               <div className={`${el.size} ${el.color} rounded-full animate-pulse-glow`} />
             </div>
@@ -80,7 +88,7 @@ export default function HeroBackground() {
         </div>
       ))}
 
-      {/* Floating Food Elements Layer */}
+      {/* Floating Food Elements Layer with individual glows */}
       <div 
         className="absolute inset-0 preserve-3d transition-transform duration-700 ease-out"
         style={{ 
@@ -95,13 +103,16 @@ export default function HeroBackground() {
           return (
             <div 
               key={item.id}
-              className={`absolute ${item.pos} ${item.animation} opacity-60 mix-blend-multiply transition-all duration-1000`}
+              className={`absolute ${item.pos} ${item.animation} mix-blend-multiply transition-all duration-1000`}
               style={{ 
                 animationDelay: (item as any).delay || '0s',
                 transform: `translate3d(${mousePos.x * item.factor}px, ${mousePos.y * item.factor}px, 0)`
               }}
             >
-              <div className={`${item.size} relative rounded-full overflow-hidden shadow-2xl border-4 border-white/20`}>
+              {/* Individual element glow */}
+              <div className="absolute inset-[-40px] bg-primary/5 blur-3xl rounded-full" />
+              
+              <div className={`${item.size} relative rounded-full overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.1)] border-4 border-white/40`}>
                 <Image 
                   src={imageData.imageUrl}
                   alt={imageData.description}
@@ -115,7 +126,7 @@ export default function HeroBackground() {
         })}
       </div>
 
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#FDFCFB]/30 z-0" />
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#FDFCFB]/40 z-0" />
     </div>
   );
 }
