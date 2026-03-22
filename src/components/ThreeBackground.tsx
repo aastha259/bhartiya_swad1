@@ -9,10 +9,6 @@ export default function ThreeBackground() {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const canvas = document.createElement('canvas');
-    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-    if (!gl) return;
-
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0xFDFCFB);
     
@@ -26,6 +22,7 @@ export default function ThreeBackground() {
         powerPreference: "high-performance"
       });
     } catch (e) {
+      console.warn("WebGL not supported");
       return;
     }
     
@@ -33,10 +30,10 @@ export default function ThreeBackground() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     containerRef.current.appendChild(renderer.domElement);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.95);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
     scene.add(ambientLight);
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.2);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.3);
     directionalLight.position.set(5, 10, 7);
     scene.add(directionalLight);
 
@@ -53,7 +50,6 @@ export default function ThreeBackground() {
         roughness: 0.95,
         metalness: 0,
         reflectivity: 0,
-        clearcoat: 0,
         opacity: 0.4,
         transparent: true
       });
@@ -68,8 +64,8 @@ export default function ThreeBackground() {
     const colors = [palette.yellow, palette.peach, palette.terracotta, palette.clay];
     const items: THREE.Mesh[] = [];
 
-    // Distribution: Primarily bottom and edges as per the image
-    const itemCount = 16;
+    // Distribution: Primarily bottom and edges to keep center clear
+    const itemCount = 14;
     for (let i = 0; i < itemCount; i++) {
       const geo = geometries[i % geometries.length];
       const color = colors[i % colors.length];
@@ -77,14 +73,14 @@ export default function ThreeBackground() {
       
       const side = Math.random() > 0.5 ? 1 : -1;
       
-      // Focus more on the bottom half
-      const x = side * (8 + Math.random() * 10);
-      const y = (Math.random() * -12) + (i < 4 ? 8 : 0); // Some at top, most drifting low
-      const z = (Math.random() - 0.5) * 8;
+      // Force elements away from the center (x: > 8 or < -8)
+      const x = side * (8 + Math.random() * 12);
+      const y = (Math.random() * 20) - 10; 
+      const z = (Math.random() - 0.5) * 5;
 
       mesh.position.set(x, y, z);
       mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
-      mesh.scale.setScalar(Math.random() * 0.6 + 0.8);
+      mesh.scale.setScalar(Math.random() * 0.8 + 0.8);
       
       scene.add(mesh);
       items.push(mesh);
@@ -98,10 +94,10 @@ export default function ThreeBackground() {
       
       const time = Date.now() * 0.0001;
       items.forEach((item, i) => {
-        item.rotation.x += 0.003;
-        item.rotation.y += 0.002;
-        item.position.y += Math.sin(time + i) * 0.003;
-        item.position.x += Math.cos(time * 0.5 + i) * 0.002;
+        item.rotation.x += 0.002;
+        item.rotation.y += 0.001;
+        item.position.y += Math.sin(time + i) * 0.004;
+        item.position.x += Math.cos(time * 0.5 + i) * 0.003;
       });
 
       renderer.render(scene, camera);

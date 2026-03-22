@@ -14,8 +14,8 @@ export default function HeroBackground() {
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       setMousePos({
-        x: (e.clientX / window.innerWidth - 0.5) * 20,
-        y: (e.clientY / window.innerHeight - 0.5) * 20,
+        x: (e.clientX / window.innerWidth - 0.5) * 30,
+        y: (e.clientY / window.innerHeight - 0.5) * 30,
       });
     };
 
@@ -23,23 +23,23 @@ export default function HeroBackground() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  // Extremely minimalist background layers to frame the content
+  // Multi-layered depth elements for parallax
   const layers = [
     {
-      id: 'far',
-      factor: 0.15,
+      id: 'bg-blobs',
+      factor: 0.1,
       elements: [
-        { color: 'bg-primary/5', size: 'w-96 h-96', pos: 'top-[-10%] left-[-5%]' },
-        { color: 'bg-accent/5', size: 'w-80 h-80', pos: 'bottom-[-10%] right-[-5%]' },
+        { color: 'bg-primary/5', size: 'w-[500px] h-[500px]', pos: 'top-[-10%] left-[-10%]' },
+        { color: 'bg-accent/5', size: 'w-[400px] h-[400px]', pos: 'bottom-[-10%] right-[-10%]' },
       ],
       blur: 'blur-3xl'
     },
     {
-      id: 'mid',
-      factor: 0.4,
+      id: 'mid-blobs',
+      factor: 0.3,
       elements: [
-        { color: 'bg-primary/5', size: 'w-64 h-64', pos: 'top-[20%] right-[-5%]' },
-        { color: 'bg-accent/5', size: 'w-48 h-48', pos: 'bottom-[15%] left-[-5%]' },
+        { color: 'bg-primary/5', size: 'w-[300px] h-[300px]', pos: 'top-[20%] right-[5%]' },
+        { color: 'bg-accent/5', size: 'w-[250px] h-[250px]', pos: 'bottom-[15%] left-[5%]' },
       ],
       blur: 'blur-2xl'
     }
@@ -61,7 +61,7 @@ export default function HeroBackground() {
           {layer.elements.map((el, idx) => (
             <div 
               key={idx} 
-              className={`absolute ${el.pos} ${layer.blur} opacity-30 transition-all duration-1000`}
+              className={`absolute ${el.pos} ${layer.blur} opacity-40 transition-all duration-1000`}
             >
               <div className={`${el.size} ${el.color} rounded-full animate-pulse-glow`} />
             </div>
@@ -69,7 +69,8 @@ export default function HeroBackground() {
         </div>
       ))}
 
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#FDFCFB]/40 z-0" />
+      {/* Vignette/Gradient mask to keep center clean */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#FDFCFB]/20 z-0" />
     </div>
   );
 }

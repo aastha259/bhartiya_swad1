@@ -25,28 +25,6 @@
   --radius: 1rem;
 }
 
-.dark {
-  --background: 22 30% 10%;
-  --foreground: 24 60% 96%;
-  --card: 22 30% 12%;
-  --card-foreground: 24 60% 96%;
-  --popover: 22 30% 12%;
-  --popover-foreground: 24 60% 96%;
-  --primary: 22 91% 55%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 22 30% 18%;
-  --secondary-foreground: 24 60% 96%;
-  --muted: 22 30% 15%;
-  --muted-foreground: 24 20% 70%;
-  --accent: 345 80% 50%;
-  --accent-foreground: 0 0% 100%;
-  --destructive: 0 62% 30%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 22 30% 20%;
-  --input: 22 30% 20%;
-  --ring: 22 91% 55%;
-}
-
 @layer base {
   * {
     @apply border-border;
@@ -65,10 +43,6 @@
 
 .preserve-3d {
   transform-style: preserve-3d;
-}
-
-.backface-hidden {
-  backface-visibility: hidden;
 }
 
 /* Premium Animations */
@@ -102,11 +76,6 @@
   will-change: transform;
 }
 
-.animate-float-fast {
-  animation: float-complex 8s ease-in-out infinite;
-  will-change: transform;
-}
-
 .animate-float-slow {
   animation: float-complex 18s ease-in-out infinite;
   will-change: transform;
@@ -118,8 +87,4 @@
 
 .animate-scale-soft {
   animation: scale-soft 10s ease-in-out infinite;
-}
-
-.mask-fade-out {
-  mask-image: radial-gradient(circle, black 40%, transparent 100%);
 }
