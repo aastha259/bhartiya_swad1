@@ -9,17 +9,12 @@ export default function ThreeBackground() {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Check if WebGL is supported
     const canvas = document.createElement('canvas');
     const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-    if (!gl) {
-      console.warn('WebGL not supported, disabling 3D background effects.');
-      return;
-    }
+    if (!gl) return;
 
     const scene = new THREE.Scene();
-    // Clean solid off-white background
-    scene.background = new THREE.Color(0xFDFCFB); 
+    scene.background = new THREE.Color(0xFDFCFB); // Solid light cream
     
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     
@@ -31,7 +26,6 @@ export default function ThreeBackground() {
         powerPreference: "high-performance"
       });
     } catch (e) {
-      console.warn('Failed to initialize THREE.WebGLRenderer:', e);
       return;
     }
     
@@ -39,65 +33,101 @@ export default function ThreeBackground() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     containerRef.current.appendChild(renderer.domElement);
 
-    // Studio Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+    // Soft Diffused Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.95);
     scene.add(ambientLight);
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
-    directionalLight.position.set(10, 20, 10);
-    scene.add(directionalLight);
-
-    const pointLight = new THREE.PointLight(0xffffff, 0.4);
-    pointLight.position.set(-10, -10, 10);
+    const pointLight = new THREE.PointLight(0xffffff, 0.2);
+    pointLight.position.set(10, 10, 10);
     scene.add(pointLight);
 
-    // Color Palette: Terracotta, Muted Yellow, Soft Peach
+    // Ghostly Palette: Very pale terracotta, muted gold, soft peach
     const colors = [
       0xE2725B, // Terracotta
-      0xE9C46A, // Muted Yellow
+      0xE9C46A, // Muted Gold
       0xF4A261, // Soft Peach
     ];
 
-    const geometries = [
-      new THREE.TorusGeometry(1, 0.35, 16, 100),
-      new THREE.SphereGeometry(0.8, 32, 32),
-      new THREE.BoxGeometry(1.4, 0.7, 0.7), // Rectangular Prisms
-    ];
+    const items: THREE.Group[] = [];
 
-    const items: THREE.Mesh[] = [];
+    const createMatka = (color: number) => {
+      const group = new THREE.Group();
+      const body = new THREE.Mesh(
+        new THREE.SphereGeometry(1, 32, 32),
+        createMaterial(color)
+      );
+      body.scale.set(1, 0.9, 1);
+      const rim = new THREE.Mesh(
+        new THREE.TorusGeometry(0.4, 0.1, 16, 32),
+        createMaterial(color)
+      );
+      rim.rotation.x = Math.PI / 2;
+      rim.position.y = 0.9;
+      group.add(body, rim);
+      return group;
+    };
 
-    // Composition: Floating elements strictly at edges and corners
-    const itemCount = 16;
-    for (let i = 0; i < itemCount; i++) {
-      const geometry = geometries[Math.floor(Math.random() * geometries.length)];
-      
-      const material = new THREE.MeshPhysicalMaterial({ 
-        color: colors[Math.floor(Math.random() * colors.length)],
-        roughness: 0.95, // High roughness for matte clay look
-        metalness: 0.05,
+    const createCinnamon = (color: number) => {
+      const group = new THREE.Group();
+      const stick = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.15, 0.15, 3, 16),
+        createMaterial(color)
+      );
+      group.add(stick);
+      return group;
+    };
+
+    const createAnise = (color: number) => {
+      const group = new THREE.Group();
+      for (let i = 0; i < 6; i++) {
+        const petal = new THREE.Mesh(
+          new THREE.BoxGeometry(0.2, 0.8, 0.1),
+          createMaterial(color)
+        );
+        petal.rotation.z = (i * Math.PI) / 3;
+        petal.position.set(
+          Math.cos((i * Math.PI) / 3) * 0.4,
+          Math.sin((i * Math.PI) / 3) * 0.4,
+          0
+        );
+        group.add(petal);
+      }
+      return group;
+    };
+
+    const createMaterial = (color: number) => {
+      return new THREE.MeshPhysicalMaterial({ 
+        color: color,
+        roughness: 1, // Full matte clay
+        metalness: 0,
         transparent: true,
-        opacity: 0.6,
-        transmission: 0.05,
-        thickness: 0.5
+        opacity: 0.3, // Ethereal ghost-like appearance
+        transmission: 0,
+        thickness: 0
       });
+    };
 
-      const mesh = new THREE.Mesh(geometry, material);
+    // Distribution: Strictly at edges and corners
+    const itemCount = 14;
+    for (let i = 0; i < itemCount; i++) {
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      let mesh: THREE.Group;
       
-      // Logic to force elements to peripheries
-      // We divide the screen into zones and avoid the center 60%
+      const type = i % 3;
+      if (type === 0) mesh = createMatka(color);
+      else if (type === 1) mesh = createCinnamon(color);
+      else mesh = createAnise(color);
+      
       const side = Math.random() > 0.5 ? 1 : -1;
       const vertical = Math.random() > 0.5 ? 1 : -1;
       
-      // Position x: far left or far right
-      const x = side * (10 + Math.random() * 8);
-      // Position y: upper or lower half, but not too central
-      const y = vertical * (6 + Math.random() * 6);
-      // Depth
-      const z = (Math.random() - 0.5) * 5 - 2;
+      const x = side * (12 + Math.random() * 8);
+      const y = vertical * (8 + Math.random() * 6);
+      const z = (Math.random() - 0.5) * 5;
 
       mesh.position.set(x, y, z);
       mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
-      mesh.scale.setScalar(Math.random() * 0.7 + 0.5);
+      mesh.scale.setScalar(Math.random() * 0.5 + 0.6);
       
       scene.add(mesh);
       items.push(mesh);
@@ -109,12 +139,12 @@ export default function ThreeBackground() {
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
       
+      const time = Date.now() * 0.0003;
       items.forEach((item, i) => {
-        // Subtle, slow movement
-        item.rotation.x += 0.0015;
-        item.rotation.y += 0.0008;
-        item.position.y += Math.sin(Date.now() * 0.0004 + i) * 0.004;
-        item.position.x += Math.cos(Date.now() * 0.0002 + i) * 0.002;
+        item.rotation.x += 0.001;
+        item.rotation.y += 0.0005;
+        item.position.y += Math.sin(time + i) * 0.003;
+        item.position.x += Math.cos(time * 0.5 + i) * 0.002;
       });
 
       renderer.render(scene, camera);
@@ -137,7 +167,6 @@ export default function ThreeBackground() {
         containerRef.current.removeChild(renderer.domElement);
       }
       renderer.dispose();
-      geometries.forEach(g => g.dispose());
     };
   }, []);
 
