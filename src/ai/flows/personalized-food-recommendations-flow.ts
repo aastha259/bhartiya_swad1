@@ -101,20 +101,26 @@ const personalizedFoodRecommendationsFlow = ai.defineFlow(
       category: food.category,
     }));
 
-    const { output } = await recommendationPrompt({
-      userFoodHistory: input.userFoodHistory,
-      simplifiedAvailableFoods: simplifiedAvailableFoods,
-    });
+    try {
+      const { output } = await recommendationPrompt({
+        userFoodHistory: input.userFoodHistory,
+        simplifiedAvailableFoods: simplifiedAvailableFoods,
+      });
 
-    if (!output || !output.recommendedFoodIds) {
+      if (!output || !output.recommendedFoodIds) {
+        return { recommendations: [] };
+      }
+
+      // Filter available foods to get the full objects for the recommended IDs
+      const recommendations = output.recommendedFoodIds
+        .map(id => input.availableFoods.find(food => food.id === id))
+        .filter((food): food is z.infer<typeof FullFoodItemSchema> => food !== undefined);
+
+      return { recommendations };
+    } catch (error: any) {
+      // Gracefully handle errors like Quota Exceeded (429)
+      console.error("Personalized Recommendations Flow Error:", error.message || error);
       return { recommendations: [] };
     }
-
-    // Filter available foods to get the full objects for the recommended IDs
-    const recommendations = output.recommendedFoodIds
-      .map(id => input.availableFoods.find(food => food.id === id))
-      .filter((food): food is z.infer<typeof FullFoodItemSchema> => food !== undefined);
-
-    return { recommendations };
   }
 );

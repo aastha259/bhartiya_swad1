@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -98,8 +97,8 @@ export default function DashboardPage() {
           if (orderData.items) {
             orderData.items.forEach((item: any) => {
               history.push({
-                name: item.foodName,
-                category: allDishes.find(f => f.id === item.dishId)?.category
+                name: item.name || item.foodName,
+                category: allDishes.find(f => f.id === item.dishId || f.name === item.name)?.category
               });
             });
           }
@@ -116,15 +115,18 @@ export default function DashboardPage() {
             imageURL: f.image || f.imageURL
           }))
         });
-        setRecommendations(result.recommendations);
+        setRecommendations(result.recommendations || []);
       } catch (e) {
-        console.error("AI flow failed", e);
+        console.warn("AI recommendations unavailable:", e);
+        setRecommendations([]);
       } finally {
         setLoadingRecs(false);
       }
     }
-    if (mounted && allDishes && allDishes.length > 0 && user) getPersonalizedRecommendations();
-  }, [user?.uid, allDishes?.length, db, mounted]);
+    if (mounted && allDishes && allDishes.length > 0 && user) {
+      getPersonalizedRecommendations();
+    }
+  }, [user?.uid, allDishes, db, mounted]);
 
   if (!mounted || loading || !user) {
     return (
