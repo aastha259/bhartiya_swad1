@@ -4,13 +4,13 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ChefHat, Mail, Lock, Chrome, Shield, ArrowRight } from 'lucide-react';
+import { ChefHat, Mail, Lock, Shield, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useAuth as useFirebaseService, useFirestore } from '@/firebase';
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
@@ -122,47 +122,6 @@ function LoginForm() {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    setLoading(true);
-    const provider = new GoogleAuthProvider();
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-
-      const userDocRef = doc(db, 'users', user.uid);
-      const userDoc = await getDoc(userDocRef);
-      
-      if (!userDoc.exists()) {
-        await setDoc(userDocRef, {
-          id: user.uid,
-          userId: user.uid,
-          email: user.email,
-          name: user.displayName,
-          displayName: user.displayName,
-          role: 'user',
-          totalOrders: 0,
-          totalMoneySpent: 0,
-          createdAt: serverTimestamp(),
-          lastLogin: serverTimestamp()
-        });
-      } else {
-        await setDoc(userDocRef, { lastLogin: serverTimestamp() }, { merge: true });
-      }
-
-      toast({ title: "Login Successful", description: `Welcome, ${user.displayName}!` });
-      router.push(callbackUrl);
-    } catch (error: any) {
-      console.error(error);
-      let message = "Could not sign in with Google.";
-      if (error.code === 'auth/operation-not-allowed') {
-        message = "Google Sign-In is not enabled. Please enable it in the Firebase Console.";
-      }
-      toast({ variant: "destructive", title: "Google Login Failed", description: message });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <Card className="w-full max-w-md shadow-2xl relative z-10 border-none rounded-[2.5rem] overflow-hidden bg-white">
       <CardHeader className="bg-primary text-white p-10 text-center">
@@ -216,21 +175,6 @@ function LoginForm() {
                     Sign In <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </span>
                 )}
-              </Button>
-              
-              <div className="relative py-4">
-                <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-dashed" /></div>
-                <div className="relative flex justify-center text-[10px] uppercase font-black"><span className="bg-white px-4 text-muted-foreground tracking-[0.2em]">Or use social</span></div>
-              </div>
-              
-              <Button 
-                variant="outline" 
-                className="w-full h-14 rounded-2xl border-2 font-black group transition-all hover:bg-muted/50" 
-                onClick={handleGoogleLogin}
-                disabled={loading}
-              >
-                <Chrome className="mr-2 h-5 w-5 text-primary group-hover:rotate-[360deg] transition-transform duration-500" />
-                Continue with Google
               </Button>
             </div>
           </TabsContent>
