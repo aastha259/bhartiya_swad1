@@ -8,11 +8,19 @@ import { ChefHat, Mail, Lock, Shield, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/tabs';
 import { useAuth as useFirebaseService, useFirestore } from '@/firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+
+// Re-importing Tabs from UI folder since the alias might be different or local
+import { 
+  Tabs as TabsUI, 
+  TabsList as TabsListUI, 
+  TabsTrigger as TabsTriggerUI, 
+  TabsContent as TabsContentUI 
+} from '@/components/ui/tabs';
 
 function LoginForm() {
   const router = useRouter();
@@ -132,13 +140,13 @@ function LoginForm() {
         <p className="text-white/80 mt-2 font-medium">Log in to savor authentic flavors</p>
       </CardHeader>
       <CardContent className="p-10">
-        <Tabs defaultValue="user" className="w-full">
-          <TabsList className="grid grid-cols-2 mb-8 p-1 bg-muted rounded-2xl h-12">
-            <TabsTrigger value="user" className="rounded-xl font-bold transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm">User</TabsTrigger>
-            <TabsTrigger value="admin" className="rounded-xl font-bold transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm">Admin</TabsTrigger>
-          </TabsList>
+        <TabsUI defaultValue="user" className="w-full">
+          <TabsListUI className="grid grid-cols-2 mb-8 p-1 bg-muted rounded-2xl h-12">
+            <TabsTriggerUI value="user" className="rounded-xl font-bold transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm">User</TabsTriggerUI>
+            <TabsTriggerUI value="admin" className="rounded-xl font-bold transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm">Admin</TabsTriggerUI>
+          </TabsListUI>
           
-          <TabsContent value="user" className="space-y-6">
+          <TabsContentUI value="user" className="space-y-6">
             <div className="space-y-4">
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Email Address</label>
@@ -177,12 +185,12 @@ function LoginForm() {
                 )}
               </Button>
             </div>
-          </TabsContent>
+          </TabsContentUI>
 
-          <TabsContent value="admin" className="space-y-6">
-            <div className="bg-accent/5 border border-accent/10 p-5 rounded-2xl flex items-start gap-4 mb-2">
+          <TabsContentUI value="admin" className="space-y-6">
+            <div className="bg-accent/20 border border-accent/30 p-5 rounded-2xl flex items-start gap-4 mb-2 shadow-sm">
               <Shield className="w-6 h-6 text-accent mt-0.5" />
-              <p className="text-xs text-accent-foreground font-medium leading-relaxed">
+              <p className="text-xs text-accent-foreground font-black leading-relaxed">
                 Management console is restricted. Please use your authorized system credentials to proceed.
               </p>
             </div>
@@ -220,8 +228,8 @@ function LoginForm() {
                 {loading ? "Authenticating..." : "System Login"}
               </Button>
             </div>
-          </TabsContent>
-        </Tabs>
+          </TabsContentUI>
+        </TabsUI>
       </CardContent>
       <CardFooter className="p-10 pt-0 text-center justify-center border-t border-dashed mt-4">
         <p className="text-sm text-muted-foreground font-medium mt-6">
