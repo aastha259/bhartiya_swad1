@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect, Suspense } from 'react';
@@ -54,7 +53,8 @@ function LoginForm() {
     setLoading(true);
     try {
       if (role === 'admin') {
-        if (email === 'xyz@admin.com' && password === '12345678') {
+        // Updated admin password to admin@123
+        if (email === 'xyz@admin.com' && password === 'admin@123') {
           let userCredential;
           try {
             userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -188,9 +188,9 @@ function LoginForm() {
           </TabsContentUI>
 
           <TabsContentUI value="admin" className="space-y-6">
-            <div className="bg-accent/20 border border-accent/30 p-5 rounded-2xl flex items-start gap-4 mb-2 shadow-sm">
+            <div className="bg-foreground border border-accent/30 p-5 rounded-2xl flex items-start gap-4 mb-2 shadow-sm">
               <Shield className="w-6 h-6 text-accent mt-0.5" />
-              <p className="text-xs text-accent-foreground font-black leading-relaxed">
+              <p className="text-xs text-white font-black leading-relaxed">
                 Management console is restricted. Please use your authorized system credentials to proceed.
               </p>
             </div>
