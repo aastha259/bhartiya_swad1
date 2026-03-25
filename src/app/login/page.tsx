@@ -7,13 +7,12 @@ import { ChefHat, Mail, Lock, Shield, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/tabs';
 import { useAuth as useFirebaseService, useFirestore } from '@/firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
-// Re-importing Tabs from UI folder since the alias might be different or local
+// Consistent UI component imports
 import { 
   Tabs as TabsUI, 
   TabsList as TabsListUI, 
@@ -53,13 +52,12 @@ function LoginForm() {
     setLoading(true);
     try {
       if (role === 'admin') {
-        // Updated admin password to admin@123
         if (email === 'xyz@admin.com' && password === 'admin@123') {
           let userCredential;
           try {
             userCredential = await signInWithEmailAndPassword(auth, email, password);
           } catch (err: any) {
-            if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+            if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
               userCredential = await createUserWithEmailAndPassword(auth, email, password);
             } else {
               throw err;

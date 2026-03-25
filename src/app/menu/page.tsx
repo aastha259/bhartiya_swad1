@@ -6,14 +6,12 @@ import {
   Search, 
   ShoppingCart, 
   ChefHat, 
-  Sparkles, 
   LogOut,
   Utensils,
   Loader2,
-  Flame,
   Store,
   Beef,
-  IceCreamCone,
+  IceCream,
   Coffee,
   Filter,
   LayoutDashboard,
@@ -44,7 +42,7 @@ import { useCart } from '@/lib/contexts/cart-context';
 import FoodCard from '@/components/FoodCard';
 import { personalizedFoodRecommendations } from '@/ai/flows/personalized-food-recommendations-flow';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, limit } from 'firebase/firestore';
+import { collection } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 
 const categoriesConfig = [
@@ -53,7 +51,7 @@ const categoriesConfig = [
   { name: 'NORTH_INDIAN', icon: Leaf },
   { name: 'SOUTH_INDIAN', icon: CircleDot },
   { name: 'STREET_FOOD', icon: Store },
-  { name: 'DESSERTS', icon: IceCreamCone },
+  { name: 'DESSERTS', icon: IceCream },
   { name: 'BEVERAGES', icon: Coffee },
 ];
 
