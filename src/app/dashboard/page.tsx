@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -88,16 +89,16 @@ export default function DashboardPage() {
       setLoadingRecs(true);
       try {
         const orderRef = collection(db, 'orders');
-        const q = query(orderRef, where('userId', '==', user.uid), limit(10));
+        const q = query(orderRef, where('userId', '==', user.uid), limit(15));
         const orderSnap = await getDocs(q);
         
         const history: { name: string; category?: string }[] = [];
         orderSnap.forEach((orderDoc) => {
           const orderData = orderDoc.data();
-          if (orderData.items) {
+          if (orderData.items && Array.isArray(orderData.items)) {
             orderData.items.forEach((item: any) => {
               history.push({
-                name: item.name || item.foodName,
+                name: item.name,
                 category: allDishes.find(f => f.id === item.dishId || f.name === item.name)?.category
               });
             });
@@ -105,7 +106,7 @@ export default function DashboardPage() {
         });
 
         const result = await personalizedFoodRecommendations({
-          userFoodHistory: history.length > 0 ? history : [],
+          userFoodHistory: history,
           availableFoods: allDishes.map(f => ({
             id: f.id,
             name: f.name,

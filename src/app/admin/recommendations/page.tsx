@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Sparkles, Loader2, User, Utensils, History } from 'lucide-react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useAuth } from '@/lib/contexts/auth-context';
-import { collection } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { personalizedFoodRecommendations } from '@/ai/flows/personalized-food-recommendations-flow';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -34,23 +34,38 @@ export default function AdminRecommendationsPage() {
   const { data: dishes } = useCollection(dishesQuery);
 
   const generateForUser = async (userId: string, userName: string) => {
+    if (!dishes) return;
     setLoadingMap(prev => ({ ...prev, [userId]: true }));
+    
     try {
-      const mockHistory = [
-        { name: 'Paneer Butter Masala', category: 'NORTH_INDIAN' },
-        { name: 'Masala Dosa', category: 'SOUTH_INDIAN' }
-      ];
+      // Fetch real history for this user to power accurate AI prediction
+      const orderRef = collection(db, 'orders');
+      const q = query(orderRef, where('userId', '==', userId), limit(15));
+      const orderSnap = await getDocs(q);
+      
+      const history: { name: string; category?: string }[] = [];
+      orderSnap.forEach((orderDoc) => {
+        const orderData = orderDoc.data();
+        if (orderData.items && Array.isArray(orderData.items)) {
+          orderData.items.forEach((item: any) => {
+            history.push({
+              name: item.name,
+              category: dishes.find(d => d.id === item.dishId || d.name === item.name)?.category
+            });
+          });
+        }
+      });
 
       const result = await personalizedFoodRecommendations({
-        userFoodHistory: mockHistory,
-        availableFoods: dishes?.map(d => ({
+        userFoodHistory: history,
+        availableFoods: dishes.map(d => ({
           id: d.id,
           name: d.name,
           price: d.price,
           category: d.category,
           rating: d.rating,
           imageURL: d.image || d.imageURL
-        })) || []
+        }))
       });
 
       setActiveRecs(prev => ({ ...prev, [userId]: result.recommendations }));

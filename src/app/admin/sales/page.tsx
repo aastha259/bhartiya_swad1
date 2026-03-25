@@ -46,7 +46,11 @@ export default function AdminSalesPage() {
       const date = subDays(new Date(), 13 - i);
       const label = format(date, 'MMM dd');
       const revenue = orders
-        .filter(o => o.createdAt && isSameDay(o.createdAt.toDate ? o.createdAt.toDate() : new Date(o.createdAt), date))
+        .filter(o => {
+          if (!o.createdAt) return false;
+          const orderDate = o.createdAt.toDate ? o.createdAt.toDate() : new Date(o.createdAt);
+          return isSameDay(orderDate, date);
+        })
         .reduce((acc, o) => acc + (o.totalAmount || 0), 0);
       return { name: label, sales: revenue };
     });
@@ -59,7 +63,11 @@ export default function AdminSalesPage() {
       const weekStart = startOfWeek(date);
       const label = `Week ${format(weekStart, 'MM/dd')}`;
       const revenue = orders
-        .filter(o => o.createdAt && isSameWeek(o.createdAt.toDate ? o.createdAt.toDate() : new Date(o.createdAt), weekStart))
+        .filter(o => {
+          if (!o.createdAt) return false;
+          const orderDate = o.createdAt.toDate ? o.createdAt.toDate() : new Date(o.createdAt);
+          return isSameWeek(orderDate, weekStart);
+        })
         .reduce((acc, o) => acc + (o.totalAmount || 0), 0);
       return { name: label, revenue };
     });
@@ -96,8 +104,8 @@ export default function AdminSalesPage() {
           };
         }
         
-        const qty = parseInt(item.quantity) || 0;
-        const price = parseFloat(item.price) || 0;
+        const qty = Number(item.quantity) || 0;
+        const price = Number(item.price) || 0;
         
         performance[dishId].totalOrders += qty;
         performance[dishId].totalRevenue += qty * price;
@@ -201,6 +209,13 @@ export default function AdminSalesPage() {
                   </TableCell>
                 </TableRow>
               ))}
+              {topSellingItems.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-20 text-muted-foreground font-bold italic opacity-40">
+                    No sales data recorded yet.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </div>
