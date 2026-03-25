@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -21,6 +22,7 @@ import {
   Minus,
   Trash2,
   ShoppingBag,
+  Lock
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -39,6 +41,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { useCart } from '@/lib/contexts/cart-context';
 import FoodCard from '@/components/FoodCard';
+import ChangePasswordForm from '@/components/ChangePasswordForm';
 import { personalizedFoodRecommendations } from '@/ai/flows/personalized-food-recommendations-flow';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, limit, where, getDocs } from 'firebase/firestore';
@@ -139,6 +142,7 @@ export default function DashboardPage() {
     { name: 'Full Menu', href: '/menu', active: false, icon: Utensils },
     { name: 'My Orders', href: '/orders', active: false, icon: ShoppingBag },
     { name: 'Favorites', href: '/favorites', active: false, icon: Heart },
+    { name: 'Security', href: '#security', active: false, icon: Lock },
   ];
 
   return (
@@ -469,6 +473,21 @@ export default function DashboardPage() {
               </div>
             </section>
           )}
+
+          <section id="security" className="space-y-10 scroll-mt-24">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-4xl font-headline font-black flex items-center gap-4 text-foreground">
+                  <Lock className="w-10 h-10 text-primary" /> 
+                  Account Security
+                </h2>
+                <p className="text-muted-foreground font-medium mt-1">Manage your access and keep your profile secure.</p>
+              </div>
+            </div>
+            <div className="max-w-2xl mx-auto w-full">
+              <ChangePasswordForm />
+            </div>
+          </section>
 
           <section className="text-center py-20 border-t border-dashed">
             <h3 className="text-3xl font-headline font-black mb-6 text-foreground">Didn't find what you like?</h3>

@@ -18,7 +18,8 @@ import {
   ShoppingBag,
   Store,
   Menu,
-  Sparkles
+  Sparkles,
+  Settings
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -64,6 +65,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: 'Order Management', href: '/admin/orders', icon: ShoppingBag },
     { name: 'AI Recommendations', href: '/admin/recommendations', icon: Sparkles },
     { name: 'Mega Repository', href: '/admin/database', icon: Database },
+    { name: 'Settings', href: '/admin/settings', icon: Settings },
   ];
 
   return (
