@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -116,8 +117,15 @@ export default function MenuPage() {
   }, [user?.uid, allDishes?.length, db, mounted]);
 
   const filteredDishes = useMemo(() => {
+    const query = search.toLowerCase().trim();
     return (allDishes || []).filter(dish => {
-      const matchesSearch = dish.name.toLowerCase().includes(search.toLowerCase());
+      // Search logic: matches name, category, or description
+      const nameMatch = dish.name?.toLowerCase().includes(query);
+      const categoryMatch = dish.category?.toLowerCase().includes(query);
+      const descriptionMatch = dish.description?.toLowerCase().includes(query);
+      const matchesSearch = query === '' || nameMatch || categoryMatch || descriptionMatch;
+
+      // Filter logic
       const matchesCategory = selectedCategory === 'All' || dish.category === selectedCategory;
       const matchesVeg = isVegOnly === null ? true : dish.isVeg === isVegOnly;
       const matchesPrice = dish.price <= maxPrice;
@@ -243,9 +251,11 @@ export default function MenuPage() {
                         <span className="text-3xl font-headline font-black text-primary">₹{totalPrice}</span>
                       </div>
                     </div>
-                    <Button className="w-full h-16 bg-primary text-xl font-black rounded-3xl shadow-xl shadow-primary/20" onClick={() => { alert("Order Placed!"); clearCart(); }}>
-                      Place Order
-                    </Button>
+                    <Link href="/cart" className="w-full">
+                      <Button className="w-full h-16 bg-primary text-xl font-black rounded-3xl shadow-xl shadow-primary/20">
+                        View Cart & Checkout
+                      </Button>
+                    </Link>
                   </SheetFooter>
                 )}
               </SheetContent>
