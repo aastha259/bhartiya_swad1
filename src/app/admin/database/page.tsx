@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Trash2, Plus, Search, Database, Loader2, Sparkles, Flame } from 'lucide-react';
+import { Trash2, Plus, Search, Database, Loader2, Sparkles, Flame, AlertCircle } from 'lucide-react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, limit, doc, deleteDoc, addDoc, writeBatch, getDocs } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
@@ -30,17 +30,25 @@ export default function AdminDatabasePage() {
   const [search, setSearch] = useState('');
   const [isAddDishOpen, setIsAddDishOpen] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
-  // Optimize: Limit database management view to 300 items to avoid excessive cost
+  // Optimized fetching
   const dishesQuery = useMemoFirebase(() => {
     return query(collection(db, 'dishes'), limit(300));
   }, [db]);
-  const { data: dishes } = useCollection(dishesQuery);
+  const { data: dishes, isLoading, error } = useCollection(dishesQuery);
 
   const handleDelete = async (id: string) => {
-    if (confirm(`Delete this dish?`)) {
+    if (!confirm(`Delete this dish?`)) return;
+    
+    setIsDeleting(id);
+    try {
       await deleteDoc(doc(db, 'dishes', id));
       toast({ title: "Deleted", description: "Dish removed successfully." });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Deletion Failed", description: e.message });
+    } finally {
+      setIsDeleting(null);
     }
   };
 
@@ -76,32 +84,18 @@ export default function AdminDatabasePage() {
       }
 
       const templates: Record<string, { count: number; prefixes: string[]; items: string[]; keywords: string[] }> = {
-        PIZZAS: {
-          count: 20,
-          prefixes: ['Artisanal', 'Classic', 'Double Cheese', 'Spicy'],
-          items: ['Margherita', 'Paneer Tikka', 'Veggie Delight'],
-          keywords: ['pizza', 'cheese']
-        },
-        BURGERS: {
-          count: 20,
-          prefixes: ['Maharaja', 'Spicy', 'Crispy', 'Supreme'],
-          items: ['Veggie Burger', 'Aloo Tikki', 'Paneer Burger'],
-          keywords: ['burger', 'sandwich']
-        }
+        PIZZAS: { count: 20, prefixes: ['Artisanal', 'Classic', 'Double Cheese', 'Spicy'], items: ['Margherita', 'Paneer Tikka', 'Veggie Delight'], keywords: ['pizza'] },
+        BURGERS: { count: 20, prefixes: ['Maharaja', 'Spicy', 'Crispy', 'Supreme'], items: ['Veggie Burger', 'Aloo Tikki', 'Paneer Burger'], keywords: ['burger'] }
       };
 
       const allItems: any[] = [];
-      
       Object.entries(templates).forEach(([category, config]) => {
         for (let i = 0; i < config.count; i++) {
           const prefix = config.prefixes[Math.floor(Math.random() * config.prefixes.length)];
           const item = config.items[Math.floor(Math.random() * config.items.length)];
           const name = `${prefix} ${item} #${i + 1}`;
-          
           allItems.push({
-            name,
-            category,
-            price: Math.floor(Math.random() * (450 - 60 + 1) + 60),
+            name, category, price: Math.floor(Math.random() * (450 - 60 + 1) + 60),
             image: `https://picsum.photos/seed/${category.toLowerCase()}${i}/800/600`,
             description: `Authentic ${name} prepared with premium ingredients.`,
             isVeg: Math.random() > 0.15,
@@ -123,7 +117,8 @@ export default function AdminDatabasePage() {
 
       toast({ title: "Sync Complete", description: `Successfully added ${allItems.length} unique dishes.` });
     } catch (e: any) {
-      toast({ variant: "destructive", title: "Seeding Failed", description: e.message });
+      console.error("Seeding error:", e);
+      toast({ variant: "destructive", title: "Seeding Failed", description: e.message || "Repository sync failed." });
     } finally {
       setIsSeeding(false);
     }
@@ -145,9 +140,14 @@ export default function AdminDatabasePage() {
       totalRevenue: 0,
       restaurantId: ''
     };
-    await addDoc(collection(db, 'dishes'), newDish);
-    setIsAddDishOpen(false);
-    toast({ title: "Dish Added", description: `${newDish.name} is now live.` });
+
+    try {
+      await addDoc(collection(db, 'dishes'), newDish);
+      setIsAddDishOpen(false);
+      toast({ title: "Dish Added", description: `${newDish.name} is now live.` });
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Error", description: err.message });
+    }
   };
 
   return (
@@ -185,6 +185,13 @@ export default function AdminDatabasePage() {
           </div>
         </div>
       </div>
+
+      {error && (
+        <div className="bg-destructive/10 text-destructive p-6 rounded-3xl flex items-center gap-4 border border-destructive/20">
+          <AlertCircle className="w-6 h-6" />
+          <p className="font-bold">Error loading repository: {error.message}</p>
+        </div>
+      )}
 
       <Card className="border shadow-sm rounded-3xl overflow-hidden bg-white">
         <div className="p-6 border-b flex justify-between items-center bg-muted/20">
@@ -246,7 +253,13 @@ export default function AdminDatabasePage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {dishes?.filter(d => d.name.toLowerCase().includes(search.toLowerCase())).map((dish) => (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-20">
+                    <Loader2 className="w-10 h-10 animate-spin text-primary mx-auto" />
+                  </TableCell>
+                </TableRow>
+              ) : dishes?.filter(d => d.name?.toLowerCase().includes(search.toLowerCase())).map((dish) => (
                 <TableRow key={dish.id} className="hover:bg-muted/5 transition-colors">
                   <TableCell className="p-6">
                     <div className="flex items-center gap-3">
@@ -265,17 +278,30 @@ export default function AdminDatabasePage() {
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className="rounded-full text-[10px] uppercase font-bold text-muted-foreground">
-                      {dish.category.replace('_', ' ')}
+                      {dish.category?.replace('_', ' ')}
                     </Badge>
                   </TableCell>
                   <TableCell className="font-black text-primary">₹{dish.price}</TableCell>
                   <TableCell className="text-right pr-6">
-                    <Button variant="ghost" size="icon" className="rounded-lg text-muted-foreground hover:text-destructive" onClick={() => handleDelete(dish.id)}>
-                      <Trash2 className="w-4 h-4" />
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="rounded-lg text-muted-foreground hover:text-destructive" 
+                      onClick={() => handleDelete(dish.id)}
+                      disabled={isDeleting === dish.id}
+                    >
+                      {isDeleting === dish.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                     </Button>
                   </TableCell>
                 </TableRow>
               ))}
+              {dishes?.length === 0 && !isLoading && (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-20 text-muted-foreground font-bold italic">
+                    Catalog is empty. Onboard new dishes manually or sync the repository.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </div>

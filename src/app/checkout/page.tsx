@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -72,7 +71,7 @@ export default function CheckoutPage() {
     }
   }, [user, authLoading, cartLoading, items.length, isOrdered, router, deliveryDetails.name]);
 
-  const handlePlaceOrder = (e: React.FormEvent) => {
+  const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
@@ -109,7 +108,7 @@ export default function CheckoutPage() {
         quantity: item.quantity,
         imageURL: item.imageURL
       })),
-      totalAmount: totalPrice + 54,
+      totalAmount: totalPrice + 54, // Items + Fees
       status: 'placed',
       paymentMethod: paymentMethod,
       paymentStatus: 'Cash on Delivery',
@@ -117,26 +116,34 @@ export default function CheckoutPage() {
       createdAt: serverTimestamp()
     };
 
-    setDoc(orderRef, orderData)
-      .then(() => {
-        setIsOrdered(true);
-        clearCart();
-        toast({
-          title: "Order Placed!",
-          description: "Your meal is on its way."
-        });
-      })
-      .catch(async (error) => {
+    try {
+      await setDoc(orderRef, orderData);
+      setIsOrdered(true);
+      clearCart();
+      toast({
+        title: "Order Placed!",
+        description: "Your meal is on its way."
+      });
+    } catch (error: any) {
+      console.error("Order Creation Error:", error);
+      
+      if (error.code === 'permission-denied') {
         const permissionError = new FirestorePermissionError({
           path: 'orders',
           operation: 'create',
           requestResourceData: orderData,
         });
         errorEmitter.emit('permission-error', permissionError);
-      })
-      .finally(() => {
-        setIsProcessing(false);
-      });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Order Failed",
+          description: "We couldn't process your order right now. Please try again."
+        });
+      }
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   if (isOrdered) {
@@ -233,6 +240,7 @@ export default function CheckoutPage() {
                           value={deliveryDetails.name}
                           onChange={(e) => setDeliveryDetails({...deliveryDetails, name: e.target.value})}
                           required
+                          disabled={isProcessing}
                         />
                       </div>
                     </div>
@@ -247,6 +255,7 @@ export default function CheckoutPage() {
                           value={deliveryDetails.phone}
                           onChange={(e) => setDeliveryDetails({...deliveryDetails, phone: e.target.value})}
                           required
+                          disabled={isProcessing}
                         />
                       </div>
                     </div>
@@ -256,10 +265,11 @@ export default function CheckoutPage() {
                     <textarea 
                       id="address" 
                       placeholder="Flat/House No., Building, Street, Area..." 
-                      className="w-full min-h-[100px] p-4 bg-background border rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                      className="w-full min-h-[100px] p-4 bg-background border rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all disabled:opacity-50"
                       value={deliveryDetails.address}
                       onChange={(e) => setDeliveryDetails({...deliveryDetails, address: e.target.value})}
                       required
+                      disabled={isProcessing}
                     />
                   </div>
                 </CardContent>
@@ -276,6 +286,7 @@ export default function CheckoutPage() {
                     defaultValue="COD" 
                     onValueChange={(val) => setPaymentMethod(val as any)}
                     className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                    disabled={isProcessing}
                   >
                     <div>
                       <RadioGroupItem value="COD" id="cod" className="peer sr-only" />
@@ -363,7 +374,9 @@ export default function CheckoutPage() {
                   className="w-full h-16 rounded-[2rem] bg-primary text-xl font-black shadow-xl shadow-primary/20 group relative overflow-hidden transition-all active:scale-95"
                 >
                   {isProcessing ? (
-                    <Loader2 className="w-6 h-6 animate-spin" />
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="w-6 h-6 animate-spin" /> <span>Transacting...</span>
+                    </div>
                   ) : (
                     <span className="flex items-center gap-2">
                       {paymentMethod === 'Online' ? 'Pay Now' : 'Place Order'} <ChevronRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />

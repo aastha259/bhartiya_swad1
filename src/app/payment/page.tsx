@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect, Suspense } from 'react';
@@ -65,49 +64,56 @@ function PaymentContent() {
 
     setIsProcessing(true);
     
-    // Simulate secure payment processing handshake
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    try {
+      // Simulate secure payment processing handshake
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
-    const orderRef = doc(collection(db, 'orders'));
-    const orderData = {
-      orderId: orderRef.id,
-      userId: user.uid,
-      userEmail: user.email,
-      items: items.map(item => ({
-        dishId: item.id,
-        name: item.name,
-        price: item.price,
-        quantity: item.quantity,
-        imageURL: item.imageURL
-      })),
-      totalAmount: totalPrice + 54,
-      status: 'placed',
-      paymentMethod: 'Online',
-      paymentStatus: 'Paid',
-      deliveryDetails: deliveryInfo,
-      createdAt: serverTimestamp()
-    };
+      const orderRef = doc(collection(db, 'orders'));
+      const orderData = {
+        orderId: orderRef.id,
+        userId: user.uid,
+        userEmail: user.email,
+        items: items.map(item => ({
+          dishId: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          imageURL: item.imageURL
+        })),
+        totalAmount: totalPrice + 54, // Items + Fees
+        status: 'placed',
+        paymentMethod: 'Online',
+        paymentStatus: 'Paid',
+        deliveryDetails: deliveryInfo,
+        createdAt: serverTimestamp()
+      };
 
-    setDoc(orderRef, orderData)
-      .then(() => {
-        setIsSuccess(true);
-        clearCart();
-        toast({
-          title: "Payment Successful!",
-          description: "Your order has been placed and is being prepared."
-        });
-      })
-      .catch(async (error) => {
+      await setDoc(orderRef, orderData);
+      setIsSuccess(true);
+      clearCart();
+      toast({
+        title: "Payment Successful!",
+        description: "Your order has been placed and is being prepared."
+      });
+    } catch (error: any) {
+      console.error("Payment Handshake Error:", error);
+      
+      if (error.code === 'permission-denied') {
         const permissionError = new FirestorePermissionError({
           path: 'orders',
           operation: 'create',
-          requestResourceData: orderData,
         });
         errorEmitter.emit('permission-error', permissionError);
-      })
-      .finally(() => {
-        setIsProcessing(false);
-      });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Payment Failed",
+          description: "We couldn't process your transaction. No funds were charged."
+        });
+      }
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   if (isSuccess) {
@@ -202,6 +208,7 @@ function PaymentContent() {
                         className="pl-10 h-12 rounded-xl"
                         required
                         maxLength={19}
+                        disabled={isProcessing}
                       />
                     </div>
                   </div>
@@ -217,6 +224,7 @@ function PaymentContent() {
                           className="pl-10 h-12 rounded-xl"
                           required
                           maxLength={5}
+                          disabled={isProcessing}
                         />
                       </div>
                     </div>
@@ -231,6 +239,7 @@ function PaymentContent() {
                           className="pl-10 h-12 rounded-xl"
                           required
                           maxLength={3}
+                          disabled={isProcessing}
                         />
                       </div>
                     </div>
@@ -244,7 +253,9 @@ function PaymentContent() {
                     className="w-full h-16 rounded-[2rem] bg-primary text-xl font-black shadow-xl shadow-primary/20 group relative overflow-hidden transition-all active:scale-95"
                   >
                     {isProcessing ? (
-                      <Loader2 className="w-6 h-6 animate-spin" />
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="w-6 h-6 animate-spin" /> Verifying Bank Gateway...
+                      </div>
                     ) : (
                       <span className="flex items-center gap-2">
                         <Lock className="w-5 h-5" /> Pay Now
@@ -274,7 +285,14 @@ function PaymentContent() {
 
 export default function PaymentPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center font-headline font-bold">Securing connection...</div>}>
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-[#FDFCFB]">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-12 h-12 animate-spin text-primary" />
+          <p className="font-headline font-bold text-muted-foreground">Securing gateway connection...</p>
+        </div>
+      </div>
+    }>
       <PaymentContent />
     </Suspense>
   );

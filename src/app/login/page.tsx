@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ChefHat, Mail, Lock, Shield, ArrowRight } from 'lucide-react';
+import { ChefHat, Mail, Lock, Shield, ArrowRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
@@ -44,7 +44,7 @@ function LoginForm() {
     }
 
     if (!password || password.length < 6) {
-      toast({ variant: "destructive", title: "Password Required", description: "Please enter your password (min 6 chars)." });
+      toast({ variant: "destructive", title: "Password Required", description: "Please enter your password (min 6 characters)." });
       return;
     }
 
@@ -56,6 +56,7 @@ function LoginForm() {
           try {
             userCredential = await signInWithEmailAndPassword(auth, email, password);
           } catch (err: any) {
+            // Auto-provision admin if they don't exist for this specific dev credential
             if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
               userCredential = await createUserWithEmailAndPassword(auth, email, password);
             } else {
@@ -114,12 +115,16 @@ function LoginForm() {
         router.push(callbackUrl);
       }
     } catch (error: any) {
-      console.error(error);
+      console.error("Auth Error:", error);
       let message = "An unexpected error occurred.";
       if (error.code === 'auth/operation-not-allowed') {
         message = "Login provider not enabled. Please enable Email/Password in Firebase Console.";
       } else if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
         message = "Invalid email or password.";
+      } else if (error.code === 'auth/network-request-failed') {
+        message = "Network error. Please check your connection.";
+      } else if (error.code === 'auth/too-many-requests') {
+        message = "Account locked due to too many failed attempts. Try again later.";
       }
       toast({ variant: "destructive", title: "Login Failed", description: message });
     } finally {
@@ -154,6 +159,7 @@ function LoginForm() {
                     className="pl-12 h-14 rounded-2xl bg-muted/30 border-none focus-visible:ring-primary/20"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -167,6 +173,7 @@ function LoginForm() {
                     className="pl-12 h-14 rounded-2xl bg-muted/30 border-none focus-visible:ring-primary/20"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -175,7 +182,11 @@ function LoginForm() {
                 onClick={() => handleLogin('user')}
                 disabled={loading}
               >
-                {loading ? "Verifying..." : (
+                {loading ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-5 h-5 animate-spin" /> Verifying...
+                  </div>
+                ) : (
                   <span className="flex items-center gap-2">
                     Sign In <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </span>
@@ -201,6 +212,7 @@ function LoginForm() {
                     className="pl-12 h-14 rounded-2xl bg-muted/30 border-none focus-visible:ring-primary/20"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -214,6 +226,7 @@ function LoginForm() {
                     className="pl-12 h-14 rounded-2xl bg-muted/30 border-none focus-visible:ring-primary/20"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -222,7 +235,11 @@ function LoginForm() {
                 onClick={() => handleLogin('admin')}
                 disabled={loading}
               >
-                {loading ? "Authenticating..." : "System Login"}
+                {loading ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-5 h-5 animate-spin" /> Authenticating...
+                  </div>
+                ) : "System Login"}
               </Button>
             </div>
           </TabsContent>
@@ -256,7 +273,12 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <Suspense fallback={<div className="text-primary font-black text-2xl animate-pulse font-headline">Bhartiya Swad...</div>}>
+      <Suspense fallback={
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-12 h-12 animate-spin text-primary" />
+          <p className="text-primary font-black text-lg font-headline">Bhartiya Swad...</p>
+        </div>
+      }>
         <LoginForm />
       </Suspense>
     </div>

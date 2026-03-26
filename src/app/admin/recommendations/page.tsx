@@ -1,19 +1,20 @@
-
 "use client"
 
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Loader2, User, Utensils, History } from 'lucide-react';
+import { Sparkles, Loader2, User, Utensils, History, AlertCircle } from 'lucide-react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { personalizedFoodRecommendations } from '@/ai/flows/personalized-food-recommendations-flow';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AdminRecommendationsPage() {
   const db = useFirestore();
+  const { toast } = useToast();
   const { user: currentUser } = useAuth();
   const [activeRecs, setActiveRecs] = useState<Record<string, any[]>>({});
   const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({});
@@ -25,7 +26,7 @@ export default function AdminRecommendationsPage() {
     if (!isAuthorized) return null;
     return collection(db, 'users');
   }, [db, isAuthorized]);
-  const { data: users } = useCollection(usersQuery);
+  const { data: users, error: usersError } = useCollection(usersQuery);
 
   const dishesQuery = useMemoFirebase(() => {
     if (!isAuthorized) return null;
@@ -72,8 +73,14 @@ export default function AdminRecommendationsPage() {
       });
 
       setActiveRecs(prev => ({ ...prev, [userId]: result.recommendations }));
-    } catch (e) {
+      toast({ title: "AI Sync Complete", description: `Personalized menu generated for ${userName}.` });
+    } catch (e: any) {
       console.error("AI Recommendation failed", e);
+      toast({ 
+        variant: "destructive", 
+        title: "Prediction Error", 
+        description: e.message?.includes("QUOTA") ? "AI Quota exceeded. Please try again in 1 minute." : "Failed to run AI prediction."
+      });
     } finally {
       setLoadingMap(prev => ({ ...prev, [userId]: false }));
     }
@@ -91,6 +98,13 @@ export default function AdminRecommendationsPage() {
         <p className="text-muted-foreground">Preview generated suggestions for your active customer base.</p>
       </div>
 
+      {usersError && (
+        <div className="bg-destructive/10 text-destructive p-6 rounded-3xl flex items-center gap-4 border border-destructive/20">
+          <AlertCircle className="w-6 h-6" />
+          <p className="font-bold">Error loading customer list: {usersError.message}</p>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {users?.map((user) => (
           <Card key={user.id} className="border shadow-sm rounded-3xl overflow-hidden group hover:shadow-lg transition-all bg-white flex flex-col">
@@ -106,7 +120,7 @@ export default function AdminRecommendationsPage() {
               </div>
               <Button 
                 className="w-full bg-primary hover:bg-primary/90 rounded-xl h-12 font-bold shadow-lg shadow-primary/10 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                onClick={() => generateForUser(user.id, user.displayName)}
+                onClick={() => generateForUser(user.id, user.displayName || 'Guest')}
                 disabled={loadingMap[user.id] || !dishes}
               >
                 {loadingMap[user.id] ? (
@@ -125,7 +139,7 @@ export default function AdminRecommendationsPage() {
                     Recommended for User
                   </h4>
                   {activeRecs[user.id] && (
-                    <Badge variant="outline" className="rounded-full text-[10px] font-bold">AI Gen</Badge>
+                    <Badge className="rounded-full text-[10px] font-bold bg-primary/10 text-primary border-none">AI Gen</Badge>
                   )}
                 </div>
                 

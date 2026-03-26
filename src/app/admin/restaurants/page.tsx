@@ -11,7 +11,8 @@ import {
   Star, 
   Phone, 
   MapPin, 
-  Loader2
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 import { 
   Card, 
@@ -42,12 +43,15 @@ import { Label } from '@/components/ui/label';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { collection, doc, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AdminRestaurantsPage() {
   const db = useFirestore();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [editingRestaurant, setEditingRestaurant] = useState<any>(null);
   const [viewingMenu, setViewingMenu] = useState<any>(null);
 
@@ -57,7 +61,7 @@ export default function AdminRestaurantsPage() {
     if (!isAuthorized) return null;
     return collection(db, 'restaurants');
   }, [db, isAuthorized]);
-  const { data: restaurants, isLoading } = useCollection(restaurantsQuery);
+  const { data: restaurants, isLoading, error: restaurantsError } = useCollection(restaurantsQuery);
 
   const dishesQuery = useMemoFirebase(() => {
     if (!isAuthorized) return null;
@@ -75,6 +79,7 @@ export default function AdminRestaurantsPage() {
 
   const handleSaveRestaurant = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsSaving(true);
     const formData = new FormData(e.currentTarget);
     const data = {
       name: formData.get('name') as string,
@@ -83,22 +88,35 @@ export default function AdminRestaurantsPage() {
       email: formData.get('email') as string,
       imageURL: formData.get('imageURL') as string || `https://picsum.photos/seed/restaurant-${Date.now()}/600/400`,
       averageRating: parseFloat(formData.get('rating') as string) || 0,
-      totalOrders: 0,
-      totalRevenue: 0
+      totalOrders: editingRestaurant?.totalOrders || 0,
+      totalRevenue: editingRestaurant?.totalRevenue || 0
     };
 
-    if (editingRestaurant) {
-      updateDoc(doc(db, 'restaurants', editingRestaurant.id), data);
-      setEditingRestaurant(null);
-    } else {
-      addDoc(collection(db, 'restaurants'), data);
-      setIsAddOpen(false);
+    try {
+      if (editingRestaurant) {
+        await updateDoc(doc(db, 'restaurants', editingRestaurant.id), data);
+        toast({ title: "Updated", description: "Restaurant record refreshed." });
+        setEditingRestaurant(null);
+      } else {
+        await addDoc(collection(db, 'restaurants'), data);
+        toast({ title: "Success", description: "Restaurant added to network." });
+        setIsAddOpen(false);
+      }
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Operation Failed", description: err.message });
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleDeleteRestaurant = async (id: string) => {
-    if (confirm('Are you sure you want to remove this restaurant partner?')) {
-      deleteDoc(doc(db, 'restaurants', id));
+    if (!confirm('Are you sure you want to remove this restaurant partner?')) return;
+    
+    try {
+      await deleteDoc(doc(db, 'restaurants', id));
+      toast({ title: "Removed", description: "Partner removed from network." });
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Error", description: err.message });
     }
   };
 
@@ -161,7 +179,8 @@ export default function AdminRestaurantsPage() {
                 <Input id="imageURL" name="imageURL" defaultValue={editingRestaurant?.imageURL} placeholder="https://..." className="rounded-xl h-12" />
               </div>
               <DialogFooter>
-                <Button type="submit" className="w-full h-14 rounded-2xl font-black bg-primary text-lg shadow-lg">
+                <Button type="submit" disabled={isSaving} className="w-full h-14 rounded-2xl font-black bg-primary text-lg shadow-lg">
+                  {isSaving ? <Loader2 className="w-6 h-6 animate-spin mr-2" /> : null}
                   {editingRestaurant ? 'Update Records' : 'Finalize Onboarding'}
                 </Button>
               </DialogFooter>
@@ -169,6 +188,13 @@ export default function AdminRestaurantsPage() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {restaurantsError && (
+        <div className="bg-destructive/10 text-destructive p-6 rounded-3xl flex items-center gap-4 border border-destructive/20">
+          <AlertCircle className="w-6 h-6" />
+          <p className="font-bold">Error syncing partner network: {restaurantsError.message}</p>
+        </div>
+      )}
 
       <div className="relative w-full max-w-md">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -261,7 +287,7 @@ export default function AdminRestaurantsPage() {
                   </TableRow>
                 );
               })}
-              {filteredRestaurants.length === 0 && !isLoading && (
+              {filteredRestaurants.length === 0 && !isLoading && !restaurantsError && (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-24">
                     <div className="flex flex-col items-center opacity-30">

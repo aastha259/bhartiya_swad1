@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -51,6 +50,15 @@ export default function SignupPage() {
       return;
     }
 
+    if (formData.password.length < 6) {
+      toast({
+        variant: "destructive",
+        title: "Weak Password",
+        description: "Password should be at least 6 characters."
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       // 1. Create user in Firebase Auth
@@ -84,10 +92,18 @@ export default function SignupPage() {
 
       router.push('/dashboard');
     } catch (error: any) {
-      console.error(error);
-      let message = error.message || "An unexpected error occurred during registration.";
-      if (error.code === 'auth/operation-not-allowed') {
-        message = "Email/Password registration is not enabled. Please enable it in the Firebase Console.";
+      console.error("Signup Error:", error);
+      let message = "An unexpected error occurred during registration.";
+      if (error.code === 'auth/email-already-in-use') {
+        message = "This email is already registered. Please login instead.";
+      } else if (error.code === 'auth/invalid-email') {
+        message = "The email address is not valid.";
+      } else if (error.code === 'auth/operation-not-allowed') {
+        message = "Email/Password registration is not enabled. Please contact support.";
+      } else if (error.code === 'auth/weak-password') {
+        message = "The password is too weak. Try adding symbols and numbers.";
+      } else if (error.code === 'auth/network-request-failed') {
+        message = "Network error. Please check your internet connection.";
       }
       toast({
         variant: "destructive",
@@ -137,6 +153,7 @@ export default function SignupPage() {
                       value={formData.fullName}
                       onChange={handleInputChange}
                       required
+                      disabled={loading}
                     />
                   </div>
                 </div>
@@ -153,6 +170,7 @@ export default function SignupPage() {
                       value={formData.phone}
                       onChange={handleInputChange}
                       required
+                      disabled={loading}
                     />
                   </div>
                 </div>
@@ -171,6 +189,7 @@ export default function SignupPage() {
                     value={formData.email}
                     onChange={handleInputChange}
                     required
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -189,6 +208,7 @@ export default function SignupPage() {
                       value={formData.password}
                       onChange={handleInputChange}
                       required
+                      disabled={loading}
                     />
                   </div>
                 </div>
@@ -205,6 +225,7 @@ export default function SignupPage() {
                       value={formData.confirmPassword}
                       onChange={handleInputChange}
                       required
+                      disabled={loading}
                     />
                   </div>
                 </div>
@@ -217,7 +238,9 @@ export default function SignupPage() {
               disabled={loading}
             >
               {loading ? (
-                <Loader2 className="w-6 h-6 animate-spin" />
+                <div className="flex items-center gap-2">
+                  <Loader2 className="w-6 h-6 animate-spin" /> Provisioning Account...
+                </div>
               ) : (
                 <span className="flex items-center gap-2">
                   Create Account <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
