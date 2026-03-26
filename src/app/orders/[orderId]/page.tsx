@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useMemo, useState, useEffect } from "react"
@@ -25,6 +24,7 @@ import { useFirestore, useDoc, useMemoFirebase } from "@/firebase"
 import { doc } from "firebase/firestore"
 import { useAuth } from "@/lib/contexts/auth-context"
 import { cn, computeOrderStatus, STATUS_LABELS } from "@/lib/utils"
+import { normalizeOrder } from "@/lib/normalizeOrder"
 
 const TRACKING_STEPS = [
   { id: "placed", label: "Order Placed", icon: Clock, color: "bg-blue-500" },
@@ -53,18 +53,9 @@ export default function OrderTrackingPage() {
     return doc(db, "orders", orderId)
   }, [db, orderId])
 
-  const { data: order, isLoading: orderLoading, error } = useDoc(orderRef)
+  const { data: rawOrder, isLoading: orderLoading, error } = useDoc(orderRef)
 
-  const displayOrderId = order?.orderId || orderId || "Unknown"
-  const totalAmount = order?.totalAmount ?? 0
-  
-  const statusKey = useMemo(() => {
-    return computeOrderStatus(order?.createdAt);
-  }, [order?.createdAt, currentTime])
-
-  const currentStepIndex = useMemo(() => {
-    return TRACKING_STEPS.findIndex(step => step.id === statusKey)
-  }, [statusKey])
+  const order = useMemo(() => normalizeOrder(rawOrder), [rawOrder]);
 
   if (authLoading || orderLoading) {
     return (
@@ -101,6 +92,13 @@ export default function OrderTrackingPage() {
       </div>
     )
   }
+
+  const displayOrderId = order.orderId || orderId || "Unknown"
+  const totalAmount = order.totalAmount ?? 0
+  
+  const statusKey = computeOrderStatus(order.createdAt);
+
+  const currentStepIndex = TRACKING_STEPS.findIndex(step => step.id === statusKey)
 
   return (
     <div className="min-h-screen bg-[#FDFCFB] pb-20">

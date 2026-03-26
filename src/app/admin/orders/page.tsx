@@ -56,7 +56,7 @@ export default function AdminOrdersPage() {
   
     return rawOrders
       .map(normalizeOrder)
-      .filter(Boolean)
+      .filter(o => o && o.userId && o.totalAmount > 0)
       .sort((a, b) => {
         const dateA = a.createdAt
           ? (a.createdAt.toDate

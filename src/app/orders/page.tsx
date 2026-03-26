@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -22,6 +21,7 @@ import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { cn, computeOrderStatus, STATUS_LABELS } from '@/lib/utils';
+import { normalizeOrder } from '@/lib/normalizeOrder';
 
 export default function MyOrdersPage() {
   const router = useRouter();
@@ -48,11 +48,14 @@ export default function MyOrdersPage() {
 
   const orders = useMemo(() => {
     if (!rawOrders) return [];
-    return [...rawOrders].sort((a, b) => {
-      const dateA = a.createdAt ? (a.createdAt.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt).getTime()) : 0;
-      const dateB = b.createdAt ? (b.createdAt.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt).getTime()) : 0;
-      return dateB - dateA;
-    });
+    return rawOrders
+      .map(normalizeOrder)
+      .filter(Boolean)
+      .sort((a, b) => {
+        const dateA = a.createdAt ? (a.createdAt.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt).getTime()) : 0;
+        const dateB = b.createdAt ? (b.createdAt.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt).getTime()) : 0;
+        return dateB - dateA;
+      });
   }, [rawOrders]);
 
   useEffect(() => {
