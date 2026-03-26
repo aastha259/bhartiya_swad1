@@ -20,6 +20,7 @@ import { useAuth } from '@/lib/contexts/auth-context';
 import { collection } from 'firebase/firestore';
 import { format, subDays, startOfWeek, isSameDay, isSameWeek } from 'date-fns';
 import { TrendingUp, ShoppingBag, BarChart3 } from 'lucide-react';
+import { normalizeOrder } from '@/lib/normalizeOrder';
 
 export default function AdminSalesPage() {
   const db = useFirestore();
@@ -41,7 +42,10 @@ export default function AdminSalesPage() {
 
   // Filter for valid orders based on standardized schema
   const validOrders = useMemo(() => {
-    return orders?.filter(o => o.totalAmount !== undefined) || [];
+    if (!orders) return [];
+    return orders
+      .map(normalizeOrder)
+      .filter(o => o && o.userId && o.totalAmount > 0);
   }, [orders]);
 
   const dailySalesData = useMemo(() => {

@@ -1,5 +1,5 @@
 "use client"
-
+import { normalizeOrder } from '@/lib/normalizeOrder';
 import React, { useMemo, useState, useEffect } from 'react';
 import { 
   TrendingUp, 
@@ -55,14 +55,17 @@ export default function AdminDashboardPage() {
   }, [db, isAuthorized]);
   const { data: restaurants } = useCollection(restaurantsQuery);
 
-  // Filter for valid orders based on schema
+  // Filter for valid orders based on schema and data consistency rules
   const validOrders = useMemo(() => {
-    return orders?.filter(o => o.totalAmount !== undefined) || [];
+    if (!orders) return [];
+    return orders
+      .map(normalizeOrder)
+      .filter(o => o && o.userId && o.totalAmount > 0);
   }, [orders]);
 
   const stats = useMemo(() => {
     const totalOrdersCount = validOrders.length;
-    const totalRevenue = validOrders.reduce((acc, o) => acc + (Number(o.totalAmount) || 0), 0);
+    const totalRevenue = validOrders.reduce((acc, o) => acc + (o.totalAmount || 0), 0);
     
     const activeCustomerIds = new Set(validOrders.map(o => o.userId).filter(Boolean));
     const totalCustomers = activeCustomerIds.size;

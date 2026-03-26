@@ -28,6 +28,7 @@ import { useAuth } from '@/lib/contexts/auth-context';
 import { collection } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { cn, computeOrderStatus, STATUS_LABELS } from '@/lib/utils';
+import { normalizeOrder } from '@/lib/normalizeOrder';
 
 export default function AdminOrdersPage() {
   const db = useFirestore();
@@ -52,11 +53,25 @@ export default function AdminOrdersPage() {
 
   const orders = useMemo(() => {
     if (!rawOrders) return [];
-    return [...rawOrders].sort((a, b) => {
-      const dateA = a.createdAt ? (a.createdAt.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt).getTime()) : 0;
-      const dateB = b.createdAt ? (b.createdAt.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt).getTime()) : 0;
-      return dateB - dateA;
-    });
+  
+    return rawOrders
+      .map(normalizeOrder)
+      .filter(Boolean)
+      .sort((a, b) => {
+        const dateA = a.createdAt
+          ? (a.createdAt.toDate
+              ? a.createdAt.toDate().getTime()
+              : new Date(a.createdAt).getTime())
+          : 0;
+    
+        const dateB = b.createdAt
+          ? (b.createdAt.toDate
+              ? b.createdAt.toDate().getTime()
+              : new Date(b.createdAt).getTime())
+          : 0;
+    
+        return dateB - dateA;
+      });
   }, [rawOrders]);
 
   const usersQuery = useMemoFirebase(() => {
@@ -233,11 +248,11 @@ export default function AdminOrdersPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {selectedOrder?.items?.map((item: any, idx: number) => (
+                    {(selectedOrder?.items || []).map((item: any, idx: number) => (
                       <TableRow key={idx} className="border-b last:border-none">
                         <TableCell className="font-bold text-sm text-foreground">{item.name}</TableCell>
                         <TableCell className="text-center font-bold text-sm text-foreground">x{item.quantity}</TableCell>
-                        <TableCell className="text-right font-black text-primary text-sm">₹{item.price * item.quantity}</TableCell>
+                        <TableCell className="text-right font-black text-primary text-sm">₹{(Number(item.price) * Number(item.quantity)).toLocaleString()}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -255,7 +270,9 @@ export default function AdminOrdersPage() {
                   <p className="text-xs text-muted-foreground italic">Validated audit record</p>
                 </div>
               </div>
-              <p className="text-4xl font-headline font-black text-primary">₹{selectedOrder?.totalAmount}</p>
+              <p className="text-4xl font-headline font-black text-primary">
+                ₹{(selectedOrder?.totalAmount || 0).toLocaleString()}
+              </p>
             </div>
           </div>
         </DialogContent>

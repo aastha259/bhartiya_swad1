@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { collection } from 'firebase/firestore';
+import { normalizeOrder } from '@/lib/normalizeOrder';
 import { 
   BarChart, 
   Bar, 
@@ -36,10 +37,16 @@ export default function AdminCustomersPage() {
   }, [db, isAuthorized]);
   const { data: orders } = useCollection(ordersQuery);
 
-  const customerData = useMemo(() => {
-    if (!users || !orders) return [];
+  // Normalize and filter orders for accurate spending insights
+  const validOrders = useMemo(() => {
+    if (!orders) return [];
+    return orders
+      .map(normalizeOrder)
+      .filter(o => o && o.userId && o.totalAmount > 0);
+  }, [orders]);
 
-    const validOrders = orders.filter(o => o.userId && o.totalAmount !== undefined);
+  const customerData = useMemo(() => {
+    if (!users || !validOrders) return [];
 
     return users.map(u => {
       const userOrders = validOrders.filter(o => o.userId === u.uid || o.userId === u.id);
@@ -55,7 +62,7 @@ export default function AdminCustomersPage() {
     })
     .filter(cust => cust.orders > 0)
     .sort((a, b) => b.spent - a.spent);
-  }, [users, orders]);
+  }, [users, validOrders]);
 
   const chartData = customerData.slice(0, 10);
 
