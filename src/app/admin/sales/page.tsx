@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useMemo } from 'react';
@@ -40,12 +39,16 @@ export default function AdminSalesPage() {
   }, [db, isAuthorized]);
   const { data: dishes } = useCollection(dishesQuery);
 
+  // Filter for valid orders based on standardized schema
+  const validOrders = useMemo(() => {
+    return orders?.filter(o => o.userId && (o.totalAmount || 0) > 0) || [];
+  }, [orders]);
+
   const dailySalesData = useMemo(() => {
-    if (!orders) return [];
     return Array.from({ length: 14 }).map((_, i) => {
       const date = subDays(new Date(), 13 - i);
       const label = format(date, 'MMM dd');
-      const revenue = orders
+      const revenue = validOrders
         .filter(o => {
           if (!o.createdAt) return false;
           const orderDate = o.createdAt.toDate ? o.createdAt.toDate() : new Date(o.createdAt);
@@ -54,15 +57,14 @@ export default function AdminSalesPage() {
         .reduce((acc, o) => acc + (o.totalAmount || 0), 0);
       return { name: label, sales: revenue };
     });
-  }, [orders]);
+  }, [validOrders]);
 
   const weeklyRevenueData = useMemo(() => {
-    if (!orders) return [];
     return Array.from({ length: 6 }).map((_, i) => {
       const date = subDays(new Date(), (5 - i) * 7);
       const weekStart = startOfWeek(date);
       const label = `Week ${format(weekStart, 'MM/dd')}`;
-      const revenue = orders
+      const revenue = validOrders
         .filter(o => {
           if (!o.createdAt) return false;
           const orderDate = o.createdAt.toDate ? o.createdAt.toDate() : new Date(o.createdAt);
@@ -71,11 +73,9 @@ export default function AdminSalesPage() {
         .reduce((acc, o) => acc + (o.totalAmount || 0), 0);
       return { name: label, revenue };
     });
-  }, [orders]);
+  }, [validOrders]);
 
   const topSellingItems = useMemo(() => {
-    if (!orders) return [];
-    
     const performance: Record<string, { 
       id: string;
       name: string; 
@@ -85,7 +85,7 @@ export default function AdminSalesPage() {
       image: string 
     }> = {};
 
-    orders.forEach(order => {
+    validOrders.forEach(order => {
       if (!order.items || !Array.isArray(order.items)) return;
       
       order.items.forEach((item: any) => {
@@ -115,7 +115,7 @@ export default function AdminSalesPage() {
     return Object.values(performance)
       .sort((a, b) => b.totalRevenue - a.totalRevenue)
       .slice(0, 10);
-  }, [orders, dishes]);
+  }, [validOrders, dishes]);
 
   if (!isAuthorized) return null;
 

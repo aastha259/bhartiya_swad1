@@ -55,8 +55,12 @@ export default function AdminDashboardPage() {
   }, [db, isAuthorized]);
   const { data: restaurants } = useCollection(restaurantsQuery);
 
+  // Single source of truth for valid orders
+  const validOrders = useMemo(() => {
+    return orders?.filter(o => o.userId && (o.totalAmount || 0) > 0) || [];
+  }, [orders]);
+
   const stats = useMemo(() => {
-    const validOrders = orders?.filter(o => o.userId && (o.totalAmount || 0) > 0) || [];
     const totalOrdersCount = validOrders.length;
     const totalRevenue = validOrders.reduce((acc, o) => acc + (o.totalAmount || 0), 0);
     
@@ -103,12 +107,9 @@ export default function AdminDashboardPage() {
         isUp: true 
       },
     ];
-  }, [orders, restaurants]);
+  }, [validOrders, restaurants]);
 
   const dailyChartData = useMemo(() => {
-    if (!orders) return [];
-    const validOrders = orders.filter(o => o.userId && (o.totalAmount || 0) > 0);
-    
     return Array.from({ length: 7 }).map((_, i) => {
       const date = subDays(new Date(), 6 - i);
       const dayLabel = format(date, 'MMM dd');
@@ -121,18 +122,16 @@ export default function AdminDashboardPage() {
         .reduce((acc, o) => acc + (o.totalAmount || 0), 0);
       return { name: dayLabel, revenue };
     });
-  }, [orders]);
+  }, [validOrders]);
 
   const recentOrders = useMemo(() => {
-    if (!orders) return [];
-    return [...orders]
-      .filter(o => o.userId && (o.totalAmount || 0) > 0)
+    return [...validOrders]
       .sort((a, b) => {
         const dateA = a.createdAt ? (a.createdAt.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt).getTime()) : 0;
         const dateB = b.createdAt ? (b.createdAt.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt).getTime()) : 0;
         return dateB - dateA;
       }).slice(0, 5);
-  }, [orders]);
+  }, [validOrders]);
 
   if (!isAuthorized) return null;
 
