@@ -82,9 +82,9 @@ export default function LandingPage() {
           © 2025 Bhartiya Swad. All rights reserved.
         </p>
         <div className="flex gap-8">
-          <button className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">Privacy</button>
-          <button className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">Terms</button>
-          <button className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">Support</button>
+          <Link href="/privacy-policy" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">Privacy Policy</Link>
+          <Link href="/terms-and-conditions" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">Terms</Link>
+          <Link href="/refund-policy" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">Refund Policy</Link>
         </div>
       </footer>
     </div>

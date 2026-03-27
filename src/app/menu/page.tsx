@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -193,7 +192,7 @@ export default function MenuPage() {
                   ) : (
                     <div className="space-y-6">
                       {items.map((item) => (
-                        <div key={item.id} className="flex gap-4 items-center p-4 bg-muted/20 rounded-2xl border border-transparent hover:border-primary/10 transition-all group hover:bg-white hover:shadow-md">
+                        <div key={item.id} className="flex gap-4 items-center p-4 bg-muted/20 rounded-2xl border border-transparent hover:border-primary/10 transition-all group hover:bg-white hover:shadow-sm">
                           <div className="w-16 h-16 rounded-2xl overflow-hidden bg-white relative border shadow-sm transition-transform group-hover:scale-105">
                             <img src={item.imageURL || ''} alt={item.name} className="object-cover w-full h-full" />
                           </div>
@@ -408,7 +407,7 @@ export default function MenuPage() {
         {!dishesLoading && allDishes?.length === 0 && (
           <div className="bg-primary/5 p-16 rounded-[4rem] border border-dashed border-primary/20 flex flex-col items-center gap-8 text-center animate-in fade-in">
             <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center">
-              <ChefHat className="w-12 h-12 text-primary" />
+              <ChefHat className="text-primary w-12 h-12 text-primary" />
             </div>
             <div className="max-w-lg space-y-4">
               <h2 className="text-4xl font-headline font-black text-foreground">Our kitchen is just getting started!</h2>
@@ -433,9 +432,9 @@ export default function MenuPage() {
             <p className="text-muted-foreground font-medium max-w-xs text-center md:text-left opacity-70">Authentic Indian culinary experiences delivered directly to your home.</p>
           </div>
           <div className="flex gap-10">
-            <Button variant="ghost" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary">Menu</Button>
-            <Button variant="ghost" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary">Locations</Button>
-            <Button variant="ghost" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary">About Us</Button>
+            <Link href="/privacy-policy" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">Privacy Policy</Link>
+            <Link href="/terms-and-conditions" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">Terms</Link>
+            <Link href="/refund-policy" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">Refund Policy</Link>
           </div>
         </div>
       </footer>

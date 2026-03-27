@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -484,7 +483,7 @@ export default function DashboardPage() {
               <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8 mb-12">
                 <div>
                   <h2 className="text-4xl font-headline font-black flex items-center gap-4 text-foreground">
-                    <Sparkles className="w-10 h-10 text-primary animate-pulse" /> 
+                    <span className="w-10 h-10 text-primary animate-pulse inline-block"><Sparkles /></span>
                     Personalized For You
                   </h2>
                   <p className="text-muted-foreground font-medium mt-1">Smart recommendations based on your unique palate.</p>
@@ -542,9 +541,9 @@ export default function DashboardPage() {
           </div>
           <p className="text-sm text-muted-foreground font-bold italic opacity-60 text-center md:text-left">© 2025 Bhartiya Swad. Delivering authentic taste across Bharat.</p>
           <div className="flex gap-6">
-            <Button variant="ghost" className="text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">Terms</Button>
-            <Button variant="ghost" className="text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">Privacy</Button>
-            <Button variant="ghost" className="text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">Help</Button>
+            <Link href="/privacy-policy" className="text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">Privacy</Link>
+            <Link href="/terms-and-conditions" className="text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">Terms</Link>
+            <Link href="/refund-policy" className="text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">Refund Policy</Link>
           </div>
         </div>
       </footer>
