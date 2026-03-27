@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { ChefHat, Mail, Lock, Shield, ArrowRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { useAuth as useFirebaseService, useFirestore } from '@/firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
@@ -27,6 +28,7 @@ function LoginForm() {
   const db = useFirestore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
@@ -45,6 +47,11 @@ function LoginForm() {
 
     if (!password || password.length < 6) {
       toast.error("Password must be at least 6 characters");
+      return;
+    }
+
+    if (role === 'user' && !acceptedTerms) {
+      toast.error("Please accept Terms & Conditions to continue");
       return;
     }
 
@@ -176,10 +183,28 @@ function LoginForm() {
                   />
                 </div>
               </div>
+
+              <div className="flex items-start space-x-3 mt-4 px-1 animate-in fade-in slide-in-from-left-2 duration-500">
+                <Checkbox 
+                  id="terms" 
+                  checked={acceptedTerms}
+                  onCheckedChange={(checked) => setAcceptedTerms(checked as boolean)}
+                  className="mt-0.5 border-muted-foreground/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                />
+                <div className="grid gap-1.5 leading-none">
+                  <label
+                    htmlFor="terms"
+                    className="text-[11px] font-bold text-muted-foreground cursor-pointer select-none leading-relaxed"
+                  >
+                    I agree to the <Link href="/terms-and-conditions" className="text-primary hover:underline underline-offset-4">Terms & Conditions</Link> and <Link href="/privacy-policy" className="text-primary hover:underline underline-offset-4">Privacy Policy</Link>
+                  </label>
+                </div>
+              </div>
+
               <Button 
-                className="w-full h-14 bg-primary hover:bg-primary/90 rounded-2xl font-black text-lg shadow-xl shadow-primary/20 transition-all active:scale-95 group"
+                className="w-full h-14 bg-primary hover:bg-primary/90 rounded-2xl font-black text-lg shadow-xl shadow-primary/20 transition-all active:scale-95 group disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={() => handleLogin('user')}
-                disabled={loading}
+                disabled={loading || !acceptedTerms}
               >
                 {loading ? (
                   <div className="flex items-center gap-2">
