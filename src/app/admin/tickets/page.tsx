@@ -30,9 +30,15 @@ export default function AdminTicketsPage() {
   const { data: tickets, isLoading } = useCollection(ticketsQuery);
 
   // Always derive active ticket from the real-time stream using the ID to ensure fresh data
-  const activeTicket = useMemo(() => 
-    tickets?.find(t => t.id === selectedId), 
-  [tickets, selectedId]);
+  const activeTicket = useMemo(() => {
+    if (!tickets || !selectedId) return null;
+    return tickets.find(t => String(t.id) === String(selectedId));
+  }, [tickets, selectedId]);
+
+  // Debug logging for production verification
+  console.log("Selected ID:", selectedId);
+  console.log("Tickets:", tickets);
+  console.log("Active Ticket:", activeTicket);
 
   const handleResolve = async (id: string) => {
     if (!id) return;
@@ -62,25 +68,29 @@ export default function AdminTicketsPage() {
   };
 
   const handleReply = async () => {
-    if (!replyText.trim() || !selectedId) return;
-
+    if (!replyText.trim() || !activeTicket?.id) return;
+  
     const replyToast = toast.loading("Sending reply...");
+  
     try {
-      const ticketRef = doc(db, 'supportTickets', selectedId);
-      
+      const ticketRef = doc(db, 'supportTickets', activeTicket.id);
+  
+      const newReply = {
+        sender: "admin",
+        text: replyText.trim(),
+        createdAt: Timestamp.now()
+      };
+  
       await updateDoc(ticketRef, {
-        replies: arrayUnion({
-          sender: "admin",
-          text: replyText.trim(),
-          createdAt: Timestamp.now()
-        })
+        replies: arrayUnion(newReply)
       });
-
+  
       setReplyText("");
-      toast.success("Reply dispatched successfully", { id: replyToast });
-    } catch (err: any) {
-      console.error("Reply transmission failed:", err);
-      toast.error("Critical: Failed to sync reply.", { id: replyToast });
+      toast.success("Reply sent successfully", { id: replyToast });
+  
+    } catch (err) {
+      console.error("Reply error:", err);
+      toast.error("Failed to send reply", { id: replyToast });
     }
   };
 
@@ -149,7 +159,7 @@ export default function AdminTicketsPage() {
                   className="hover:bg-muted/5 transition-colors border-b last:border-none group cursor-pointer"
                   onClick={() => {
                     setSelectedId(ticket.id);
-                    setIsDetailsOpen(true);
+                    setTimeout(() => setIsDetailsOpen(true), 50);
                   }}
                 >
                   <TableCell className="px-10 py-8">
@@ -223,139 +233,148 @@ export default function AdminTicketsPage() {
 
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
         <DialogContent className="sm:max-w-[600px] rounded-[2.5rem] p-0 overflow-hidden border-none bg-[#FDFCFB]">
-          <DialogHeader className="bg-primary p-10 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <DialogTitle className="text-3xl font-headline font-black">Support Inquiry</DialogTitle>
-                <p className="text-white/70 font-bold mt-1 flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  {activeTicket?.createdAt ? format(activeTicket.createdAt.toDate ? activeTicket.createdAt.toDate() : new Date(activeTicket.createdAt), 'MMMM dd, yyyy') : 'Recently received'}
-                </p>
-              </div>
-              <Badge className={cn(
-                "rounded-full px-4 py-1.5 font-black text-[10px] uppercase border-none",
-                activeTicket?.status === 'resolved' ? "bg-white text-green-600" : "bg-white text-orange-600"
-              )}>
-                {activeTicket?.status?.toUpperCase() || 'OPEN'}
-              </Badge>
+          {!activeTicket ? (
+            <div className="p-20 text-center flex flex-col items-center justify-center gap-4">
+              <Loader2 className="w-10 h-10 animate-spin text-primary" />
+              <p className="font-bold text-muted-foreground">Synchronizing ticket data...</p>
             </div>
-          </DialogHeader>
-          
-          <div className="p-10 space-y-8">
-            <div className="space-y-4">
-              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Customer Details</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 bg-white rounded-2xl border flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-primary/5 flex items-center justify-center text-primary">
-                    <User className="w-5 h-5" />
-                  </div>
+          ) : (
+            <>
+              <DialogHeader className="bg-primary p-10 text-white">
+                <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-bold text-sm text-foreground">{activeTicket?.name}</p>
-                    <p className="text-[10px] text-muted-foreground">Name</p>
+                    <DialogTitle className="text-3xl font-headline font-black">Support Inquiry</DialogTitle>
+                    <p className="text-white/70 font-bold mt-1 flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      {activeTicket.createdAt ? format(activeTicket.createdAt.toDate ? activeTicket.createdAt.toDate() : new Date(activeTicket.createdAt), 'MMMM dd, yyyy') : 'Recently received'}
+                    </p>
                   </div>
+                  <Badge className={cn(
+                    "rounded-full px-4 py-1.5 font-black text-[10px] uppercase border-none",
+                    activeTicket.status === 'resolved' ? "bg-white text-green-600" : "bg-white text-orange-600"
+                  )}>
+                    {activeTicket.status?.toUpperCase() || 'OPEN'}
+                  </Badge>
                 </div>
-                <div className="p-4 bg-white rounded-2xl border flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-primary/5 flex items-center justify-center text-primary">
-                    <Mail className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-sm text-foreground truncate">{activeTicket?.email}</p>
-                    <p className="text-[10px] text-muted-foreground">Email</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Conversation History</p>
-              <ScrollArea className="h-[300px] w-full rounded-2xl border bg-white p-4 shadow-inner">
-                <div className="space-y-6">
-                  {/* Original Message */}
-                  <div className="flex flex-col items-start gap-1.5">
-                    <div className="bg-muted p-4 rounded-2xl rounded-tl-none max-w-[85%] text-sm shadow-sm border">
-                      <p className="font-black text-[10px] text-muted-foreground uppercase mb-1 tracking-tighter">{activeTicket?.name}</p>
-                      {activeTicket?.message}
-                    </div>
-                    <span className="text-[9px] text-muted-foreground font-bold px-1 opacity-60">
-                      {activeTicket?.createdAt && format(activeTicket.createdAt.toDate ? activeTicket.createdAt.toDate() : new Date(activeTicket.createdAt), 'MMM dd, p')}
-                    </span>
-                  </div>
-
-                  {/* Replies Array */}
-                  {(activeTicket?.replies || []).map((reply: any, i: number) => (
-                    <div key={i} className={cn("flex flex-col gap-1.5", reply.sender === 'admin' ? "items-end" : "items-start")}>
-                      <div className={cn(
-                        "p-4 rounded-2xl text-sm max-w-[85%] shadow-sm",
-                        reply.sender === 'admin' 
-                          ? "bg-primary text-white rounded-tr-none" 
-                          : "bg-muted rounded-tl-none border"
-                      )}>
-                        <p className={cn(
-                          "font-black text-[10px] uppercase mb-1 tracking-tighter",
-                          reply.sender === 'admin' ? "text-white/70" : "text-muted-foreground"
-                        )}>
-                          {reply.sender === 'admin' ? "System Concierge" : activeTicket?.name}
-                        </p>
-                        {reply.text}
+              </DialogHeader>
+              
+              <div className="p-10 space-y-8">
+                <div className="space-y-4">
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Customer Details</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 bg-white rounded-2xl border flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-primary/5 flex items-center justify-center text-primary">
+                        <User className="w-5 h-5" />
                       </div>
-                      <span className="text-[9px] text-muted-foreground font-bold px-1 opacity-60">
-                        {reply.createdAt && format(reply.createdAt.toDate ? reply.createdAt.toDate() : new Date(reply.createdAt), 'MMM dd, p')}
-                      </span>
+                      <div>
+                        <p className="font-bold text-sm text-foreground">{activeTicket.name}</p>
+                        <p className="text-[10px] text-muted-foreground">Name</p>
+                      </div>
                     </div>
-                  ))}
+                    <div className="p-4 bg-white rounded-2xl border flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-primary/5 flex items-center justify-center text-primary">
+                        <Mail className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-sm text-foreground truncate">{activeTicket.email}</p>
+                        <p className="text-[10px] text-muted-foreground">Email</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </ScrollArea>
-            </div>
 
-            <div className="space-y-4 pt-4 border-t border-dashed">
-              <div className="flex gap-3">
-                <Input 
-                  placeholder="Type concierge reply..." 
-                  className="rounded-xl h-12 bg-white border-muted focus-visible:ring-primary/20"
-                  value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleReply();
-                  }}
-                />
-                <Button 
-                  onClick={handleReply}
-                  disabled={!replyText.trim() || !selectedId}
-                  className="h-12 w-12 rounded-xl bg-primary hover:bg-primary/90 shadow-lg p-0 shrink-0 transition-transform active:scale-90"
-                >
-                  <Send className="w-5 h-5" />
-                </Button>
-              </div>
+                <div className="space-y-4">
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Conversation History</p>
+                  <ScrollArea className="h-[300px] w-full rounded-2xl border bg-white p-4 shadow-inner">
+                    <div className="space-y-6">
+                      {/* Original Message */}
+                      <div className="flex flex-col items-start gap-1.5">
+                        <div className="bg-muted p-4 rounded-2xl rounded-tl-none max-w-[85%] text-sm shadow-sm border">
+                          <p className="font-black text-[10px] text-muted-foreground uppercase mb-1 tracking-tighter">{activeTicket.name}</p>
+                          {activeTicket.message}
+                        </div>
+                        <span className="text-[9px] text-muted-foreground font-bold px-1 opacity-60">
+                          {activeTicket.createdAt && format(activeTicket.createdAt.toDate ? activeTicket.createdAt.toDate() : new Date(activeTicket.createdAt), 'MMM dd, p')}
+                        </span>
+                      </div>
 
-              <div className="flex items-center justify-between gap-4 pt-2">
-                <div className="flex gap-3">
-                  {activeTicket?.status !== 'resolved' && (
+                      {/* Replies Array */}
+                      {(activeTicket.replies || []).map((reply: any, i: number) => (
+                        <div key={i} className={cn("flex flex-col gap-1.5", reply.sender === 'admin' ? "items-end" : "items-start")}>
+                          <div className={cn(
+                            "p-4 rounded-2xl text-sm max-w-[85%] shadow-sm",
+                            reply.sender === 'admin' 
+                              ? "bg-primary text-white rounded-tr-none" 
+                              : "bg-muted rounded-tl-none border"
+                          )}>
+                            <p className={cn(
+                              "font-black text-[10px] uppercase mb-1 tracking-tighter",
+                              reply.sender === 'admin' ? "text-white/70" : "text-muted-foreground"
+                            )}>
+                              {reply.sender === 'admin' ? "System Concierge" : activeTicket.name}
+                            </p>
+                            {reply.text}
+                          </div>
+                          <span className="text-[9px] text-muted-foreground font-bold px-1 opacity-60">
+                            {reply.createdAt && format(reply.createdAt.toDate ? reply.createdAt.toDate() : new Date(reply.createdAt), 'MMM dd, p')}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </div>
+
+                <div className="space-y-4 pt-4 border-t border-dashed">
+                  <div className="flex gap-3">
+                    <Input 
+                      placeholder="Type concierge reply..." 
+                      className="rounded-xl h-12 bg-white border-muted focus-visible:ring-primary/20"
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleReply();
+                      }}
+                    />
                     <Button 
-                      className="rounded-xl font-bold bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-200 h-11"
-                      onClick={() => handleResolve(activeTicket?.id)}
+                      onClick={handleReply}
+                      disabled={!replyText.trim() || !activeTicket.id}
+                      className="h-12 w-12 rounded-xl bg-primary hover:bg-primary/90 shadow-lg p-0 shrink-0 transition-transform active:scale-90"
                     >
-                      Mark Resolved
+                      <Send className="w-5 h-5" />
                     </Button>
-                  )}
-                  <Button 
-                    variant="ghost"
-                    className="rounded-xl font-bold text-destructive hover:bg-destructive/5 h-11"
-                    onClick={() => handleDelete(activeTicket?.id)}
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Discard
-                  </Button>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4 pt-2">
+                    <div className="flex gap-3">
+                      {activeTicket && activeTicket.status !== 'resolved' && (
+                        <Button 
+                          className="rounded-xl font-bold bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-200 h-11"
+                          onClick={() => handleResolve(activeTicket.id)}
+                        >
+                          Mark Resolved
+                        </Button>
+                      )}
+                      <Button 
+                        variant="ghost"
+                        className="rounded-xl font-bold text-destructive hover:bg-destructive/5 h-11"
+                        onClick={() => handleDelete(activeTicket.id)}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Discard
+                      </Button>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      className="rounded-xl font-bold border-primary text-primary h-11"
+                      onClick={() => setIsDetailsOpen(false)}
+                    >
+                      Close Console
+                    </Button>
+                  </div>
                 </div>
-                <Button 
-                  variant="outline" 
-                  className="rounded-xl font-bold border-primary text-primary h-11"
-                  onClick={() => setIsDetailsOpen(false)}
-                >
-                  Close Console
-                </Button>
               </div>
-            </div>
-          </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>
