@@ -1,8 +1,8 @@
 
 "use client"
 
-import React, { useMemo, useState } from 'react';
-import { Bell, Check, Info, ShoppingBag, X } from 'lucide-react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
+import { Bell, Check, Info, ShoppingBag, X, Volume2, VolumeX } from 'lucide-react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { collection, query, where, limit, doc, updateDoc, writeBatch } from 'firebase/firestore';
@@ -23,6 +23,11 @@ export default function NotificationBell() {
   const { user } = useAuth();
   const db = useFirestore();
   const [open, setOpen] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  
+  // Refs for tracking new notifications
+  const lastProcessedId = useRef<string | null>(null);
+  const isFirstLoad = useRef(true);
 
   // Firestore query for user notifications
   const notificationsQuery = useMemoFirebase(() => {
@@ -36,6 +41,24 @@ export default function NotificationBell() {
 
   const { data: rawNotifications } = useCollection(notificationsQuery);
 
+  // Load sound preference
+  useEffect(() => {
+    const stored = localStorage.getItem('bhartiya_swad_notifications_sound');
+    if (stored !== null) {
+      setSoundEnabled(stored === 'true');
+    }
+  }, []);
+
+  const toggleSound = () => {
+    const newState = !soundEnabled;
+    setSoundEnabled(newState);
+    localStorage.setItem('bhartiya_swad_notifications_sound', String(newState));
+    toast.success(newState ? "Notification sounds enabled" : "Notification sounds muted", {
+      icon: newState ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />,
+      duration: 1500
+    });
+  };
+
   // Client-side sorting to avoid the need for composite indexes
   const notifications = useMemo(() => {
     if (!rawNotifications) return [];
@@ -45,6 +68,41 @@ export default function NotificationBell() {
       return timeB - timeA;
     });
   }, [rawNotifications]);
+
+  // Handle Sound and Vibration feedback for NEW notifications
+  useEffect(() => {
+    if (!notifications || notifications.length === 0) return;
+
+    const latest = notifications[0];
+
+    // Initialize the ID on first load without playing sound
+    if (isFirstLoad.current) {
+      lastProcessedId.current = latest.id;
+      isFirstLoad.current = false;
+      return;
+    }
+
+    // If we have a new notification that hasn't been seen by this session
+    if (latest.id !== lastProcessedId.current && !latest.read) {
+      lastProcessedId.current = latest.id;
+
+      // Audio feedback
+      if (soundEnabled) {
+        const audio = new Audio('/sounds/ding.mp3');
+        audio.play().catch(err => {
+          // Log only if it's not a standard interaction block
+          if (err.name !== 'NotAllowedError') {
+            console.warn("Notification audio failed:", err);
+          }
+        });
+      }
+
+      // Haptic feedback (supported on some Android devices/browsers)
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(200);
+      }
+    }
+  }, [notifications, soundEnabled]);
 
   const unreadCount = useMemo(() => {
     return notifications?.filter(n => !n.read).length || 0;
@@ -115,16 +173,31 @@ export default function NotificationBell() {
             </p>
           </div>
           
-          {unreadCount > 0 && (
+          <div className="absolute bottom-6 left-8 right-8 flex justify-between items-center">
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={markAllAsRead}
-              className="absolute bottom-6 right-8 text-white hover:bg-white/20 rounded-xl text-xs font-black uppercase tracking-tighter"
+              onClick={toggleSound}
+              className="text-white hover:bg-white/20 rounded-xl px-3 gap-2"
+              title={soundEnabled ? "Mute notification sounds" : "Unmute notification sounds"}
             >
-              Mark all as read
+              {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+              <span className="text-[10px] font-black uppercase tracking-tighter">
+                {soundEnabled ? "On" : "Muted"}
+              </span>
             </Button>
-          )}
+
+            {unreadCount > 0 && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={markAllAsRead}
+                className="text-white hover:bg-white/20 rounded-xl text-xs font-black uppercase tracking-tighter"
+              >
+                Mark all as read
+              </Button>
+            )}
+          </div>
         </div>
         
         {/* Notifications List */}
