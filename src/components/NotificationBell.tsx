@@ -7,12 +7,12 @@ import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { collection, query, where, limit, doc, updateDoc, writeBatch } from 'firebase/firestore';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
@@ -24,8 +24,7 @@ export default function NotificationBell() {
   const db = useFirestore();
   const [open, setOpen] = useState(false);
 
-  // Removed orderBy to resolve "The query requires an index" error.
-  // We handle sorting client-side for immediate functionality.
+  // Firestore query for user notifications
   const notificationsQuery = useMemoFirebase(() => {
     if (!user?.uid) return null;
     return query(
@@ -69,7 +68,7 @@ export default function NotificationBell() {
     });
     try {
       await batch.commit();
-      toast.success("All notifications cleared");
+      toast.success("All notifications caught up!");
     } catch (error) {
       toast.error("Failed to clear notifications");
     }
@@ -78,94 +77,120 @@ export default function NotificationBell() {
   if (!user) return null;
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-primary transition-all active:scale-90">
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="relative text-muted-foreground hover:text-primary transition-all active:scale-90"
+        >
           <Bell className="w-6 h-6" />
           {unreadCount > 0 && (
-            <span className="absolute top-2 right-2 w-4 h-4 bg-accent text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white animate-in zoom-in">
+            <span className="absolute top-2 right-2 w-5 h-5 bg-accent text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white animate-in zoom-in shadow-sm">
               {unreadCount}
             </span>
           )}
         </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-80 sm:w-96 rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl" align="end">
-        <div className="bg-primary p-6 text-white flex items-center justify-between relative">
+      </SheetTrigger>
+      <SheetContent 
+        className="w-full sm:max-w-[400px] p-0 border-l shadow-2xl flex flex-col rounded-l-[2.5rem]"
+      >
+        {/* Header Section */}
+        <div className="bg-primary p-8 text-white relative">
           {/* Top Left Close Button */}
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-4 left-4 w-8 h-8 rounded-full bg-white/20 hover:bg-white/40 text-white shadow-sm transition-all active:scale-90 z-50 border border-white/10"
+            className="absolute top-6 left-6 w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 text-white shadow-sm border border-white/10 transition-transform active:scale-90"
             onClick={() => setOpen(false)}
             aria-label="Close notifications"
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5" />
           </Button>
 
-          <div className="pl-10"> {/* Offset for close button */}
-            <h3 className="font-headline font-black text-xl">Activity</h3>
-            <p className="text-[10px] font-bold opacity-70 uppercase tracking-widest">Recent Notifications</p>
+          <div className="pl-12 flex flex-col gap-1">
+            <h3 className="font-headline font-black text-2xl tracking-tight">Notifications</h3>
+            <p className="text-[10px] font-bold opacity-70 uppercase tracking-widest">
+              Stay updated with your cravings
+            </p>
           </div>
           
           {unreadCount > 0 && (
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={(e) => {
-                e.stopPropagation();
-                markAllAsRead();
-              }}
-              className="text-white hover:bg-white/20 rounded-xl text-xs font-bold"
+              onClick={markAllAsRead}
+              className="absolute bottom-6 right-8 text-white hover:bg-white/20 rounded-xl text-xs font-black uppercase tracking-tighter"
             >
-              Clear All
+              Mark all as read
             </Button>
           )}
         </div>
         
-        <ScrollArea className="h-[400px]">
-          <div className="p-2">
+        {/* Notifications List */}
+        <ScrollArea className="flex-1">
+          <div className="p-6 space-y-4">
             {notifications && notifications.length > 0 ? (
               notifications.map((n) => (
-                <DropdownMenuItem 
+                <div 
                   key={n.id} 
                   onClick={() => !n.read && markAsRead(n.id)}
                   className={cn(
-                    "flex items-start gap-4 p-4 rounded-2xl cursor-pointer transition-colors mb-1",
-                    !n.read ? "bg-primary/5 hover:bg-primary/10" : "hover:bg-muted/50"
+                    "flex items-start gap-4 p-5 rounded-[1.5rem] cursor-pointer transition-all border group relative",
+                    !n.read 
+                      ? "bg-primary/[0.03] border-primary/10 shadow-sm hover:bg-primary/[0.06]" 
+                      : "bg-white border-muted hover:bg-muted/30"
                   )}
                 >
+                  {/* Status Icon */}
                   <div className={cn(
-                    "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm",
+                    "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner",
                     n.type === 'order' ? "bg-green-100 text-green-600" : "bg-blue-100 text-blue-600"
                   )}>
-                    {n.type === 'order' ? <ShoppingBag className="w-5 h-5" /> : <Info className="w-5 h-5" />}
+                    {n.type === 'order' ? <ShoppingBag className="w-6 h-6" /> : <Info className="w-6 h-6" />}
                   </div>
-                  <div className="flex-1 space-y-1">
-                    <p className={cn("text-sm leading-tight", !n.read ? "font-black" : "font-medium text-muted-foreground")}>
+
+                  {/* Text Content */}
+                  <div className="flex-1 space-y-1.5 min-w-0">
+                    <p className={cn(
+                      "text-sm leading-relaxed", 
+                      !n.read ? "font-black text-foreground" : "font-medium text-muted-foreground"
+                    )}>
                       {n.message}
                     </p>
-                    <p className="text-[10px] text-muted-foreground font-bold">
+                    <p className="text-[10px] text-muted-foreground font-bold flex items-center gap-2">
+                      <span className="w-1 h-1 bg-muted-foreground/30 rounded-full" />
                       {n.createdAt ? format(n.createdAt.toDate ? n.createdAt.toDate() : new Date(n.createdAt), 'MMM dd, p') : 'Just now'}
                     </p>
                   </div>
+
+                  {/* Unread Indicator */}
                   {!n.read && (
-                    <div className="w-2 h-2 bg-accent rounded-full mt-2" />
+                    <div className="absolute top-5 right-5">
+                      <div className="w-2.5 h-2.5 bg-accent rounded-full animate-pulse shadow-sm shadow-accent/50" />
+                    </div>
                   )}
-                </DropdownMenuItem>
+                </div>
               ))
             ) : (
-              <div className="py-20 text-center flex flex-col items-center justify-center opacity-30">
-                <Bell className="w-12 h-12 mb-4" />
-                <p className="font-black text-sm uppercase tracking-widest">No notifications yet</p>
+              <div className="py-32 text-center flex flex-col items-center justify-center opacity-30 animate-in fade-in slide-in-from-bottom-4">
+                <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mb-6">
+                  <Bell className="w-10 h-10" />
+                </div>
+                <p className="font-black text-xl italic">No notifications yet 🔔</p>
+                <p className="text-sm font-medium max-w-[200px] mt-2">We'll let you know when something delicious happens!</p>
               </div>
             )}
           </div>
         </ScrollArea>
-        <DropdownMenuSeparator className="bg-muted" />
-        <div className="p-4 bg-muted/20 text-center">
-          <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em]">End of Stream</p>
+
+        {/* Footer / End of stream */}
+        <div className="p-6 bg-muted/10 border-t border-dashed text-center">
+          <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.3em] opacity-50">
+            End of updates
+          </p>
         </div>
-      </DropdownMenuContent>
-    </DropdownMenu>
+      </SheetContent>
+    </Sheet>
   );
 }
