@@ -41,9 +41,10 @@ export default function OrderTrackingPage() {
 
   const db = useFirestore()
   const { user, loading: authLoading } = useAuth()
-  const [currentTime, setCurrentTime] = useState(new Date())
+  const [currentTime, setCurrentTime] = useState<Date | null>(null);
 
   useEffect(() => {
+    setCurrentTime(new Date());
     const interval = setInterval(() => {
       setCurrentTime(new Date())
     }, 10000)
@@ -59,7 +60,7 @@ export default function OrderTrackingPage() {
 
   const order = useMemo(() => normalizeOrder(rawOrder), [rawOrder]);
 
-  if (authLoading || orderLoading) {
+  if (authLoading || orderLoading || !currentTime) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FDFCFB]">
         <div className="flex flex-col items-center gap-4">

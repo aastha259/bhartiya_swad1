@@ -1,3 +1,4 @@
+
 "use client"
 import { normalizeOrder } from '@/lib/normalizeOrder';
 import React, { useMemo, useState, useEffect } from 'react';
@@ -37,9 +38,10 @@ import { format, subDays, isSameDay, startOfDay } from 'date-fns';
 export default function AdminDashboardPage() {
   const db = useFirestore();
   const { user } = useAuth();
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [currentTime, setCurrentTime] = useState<Date | null>(null);
 
   useEffect(() => {
+    setCurrentTime(new Date());
     const interval = setInterval(() => setCurrentTime(new Date()), 30000);
     return () => clearInterval(interval);
   }, []);
@@ -47,15 +49,16 @@ export default function AdminDashboardPage() {
   const isAuthorized = user?.isAdmin && user.email === 'xyz@admin.com';
 
   const ordersQuery = useMemoFirebase(() => {
-    if (!isAuthorized) return null;
-    const thirtyDaysAgo = subDays(startOfDay(new Date()), 30);
+    if (!isAuthorized || !currentTime) return null;
+    // Base the calculation on start of day to avoid minor hydration variations
+    const thirtyDaysAgo = subDays(startOfDay(currentTime), 30);
     return query(
       collection(db, 'orders'), 
       where('createdAt', '>=', thirtyDaysAgo),
       orderBy('createdAt', 'desc'),
       limit(1000)
     );
-  }, [db, isAuthorized]);
+  }, [db, isAuthorized, currentTime ? format(startOfDay(currentTime), 'yyyy-MM-dd') : null]);
   const { data: orders } = useCollection(ordersQuery);
 
   const usersQuery = useMemoFirebase(() => {
@@ -132,19 +135,19 @@ export default function AdminDashboardPage() {
     const totalRevenue = validOrders.reduce((acc, o) => acc + (o.totalAmount || 0), 0);
     const activeCustomerIds = new Set(validOrders.map(o => o.userId).filter(Boolean));
     const totalCustomers = activeCustomerIds.size;
-    const totalRestaurants = restaurants?.length || 0;
-
+    
     return [
       { label: 'Revenue (30d)', value: `₹${totalRevenue.toLocaleString()}`, icon: TrendingUp, color: 'text-primary', bg: 'bg-primary/10', trend: '+12%', isUp: true },
       { label: 'Orders (30d)', value: totalOrdersCount.toLocaleString(), icon: ShoppingBag, color: 'text-accent', bg: 'bg-accent/10', trend: '+8%', isUp: true },
       { label: 'Active Users', value: totalCustomers.toLocaleString(), icon: Users, color: 'text-blue-600', bg: 'bg-blue-600/10', trend: '+5%', isUp: true },
       { label: 'Peak Traffic', value: insights.peakHour, icon: Clock, color: 'text-green-600', bg: 'bg-green-600/10', trend: 'Live', isUp: true },
     ];
-  }, [validOrders, restaurants, insights]);
+  }, [validOrders, insights.peakHour]);
 
   const dailyChartData = useMemo(() => {
+    if (!currentTime) return [];
     return Array.from({ length: 7 }).map((_, i) => {
-      const date = subDays(new Date(), 6 - i);
+      const date = subDays(currentTime, 6 - i);
       const dayLabel = format(date, 'MMM dd');
       const revenue = validOrders
         .filter(o => {
@@ -155,11 +158,13 @@ export default function AdminDashboardPage() {
         .reduce((acc, o) => acc + (Number(o.totalAmount) || 0), 0);
       return { name: dayLabel, revenue };
     });
-  }, [validOrders]);
+  }, [validOrders, currentTime]);
 
   if (!isAuthorized) {
     return <div className="p-12 text-center font-bold text-muted-foreground">Unauthorized Access</div>;
   }
+
+  if (!currentTime) return null;
 
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -170,7 +175,7 @@ export default function AdminDashboardPage() {
         </div>
         <div className="bg-white px-6 py-3 rounded-2xl shadow-sm flex items-center gap-3 border font-bold text-sm">
           <Calendar className="w-4 h-4 text-primary" />
-          <span>{format(new Date(), 'MMMM dd, yyyy')}</span>
+          <span>{format(currentTime, 'MMMM dd, yyyy')}</span>
         </div>
       </div>
 

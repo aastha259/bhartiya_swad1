@@ -30,10 +30,11 @@ export default function MyOrdersPage() {
   const { user, loading, logout } = useAuth();
   const db = useFirestore();
   const [mounted, setMounted] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [currentTime, setCurrentTime] = useState<Date | null>(null);
 
   useEffect(() => {
     setMounted(true);
+    setCurrentTime(new Date());
     const interval = setInterval(() => setCurrentTime(new Date()), 10000);
     return () => clearInterval(interval);
   }, []);
@@ -66,7 +67,7 @@ export default function MyOrdersPage() {
     }
   }, [user, loading, router, mounted]);
 
-  if (!mounted || loading || !user) {
+  if (!mounted || loading || !user || !currentTime) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FDFCFB]">
         <div className="flex flex-col items-center gap-4">
