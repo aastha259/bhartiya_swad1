@@ -1,21 +1,19 @@
 
 "use client"
 
-import React, { useMemo } from 'react';
-import { Bell, Check, Info, ShoppingBag } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Bell, Check, Info, ShoppingBag, X } from 'lucide-react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useAuth } from '@/lib/contexts/auth-context';
-import { collection, query, where, orderBy, limit, doc, updateDoc, writeBatch, getDocs } from 'firebase/firestore';
+import { collection, query, where, limit, doc, updateDoc, writeBatch } from 'firebase/firestore';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuHeader,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -24,18 +22,30 @@ import toast from 'react-hot-toast';
 export default function NotificationBell() {
   const { user } = useAuth();
   const db = useFirestore();
+  const [open, setOpen] = useState(false);
 
+  // Removed orderBy to resolve "The query requires an index" error.
+  // We handle sorting client-side for immediate functionality.
   const notificationsQuery = useMemoFirebase(() => {
     if (!user?.uid) return null;
     return query(
       collection(db, 'notifications'),
       where('userId', '==', user.uid),
-      orderBy('createdAt', 'desc'),
-      limit(20)
+      limit(50)
     );
   }, [db, user?.uid]);
 
-  const { data: notifications } = useCollection(notificationsQuery);
+  const { data: rawNotifications } = useCollection(notificationsQuery);
+
+  // Client-side sorting to avoid the need for composite indexes
+  const notifications = useMemo(() => {
+    if (!rawNotifications) return [];
+    return [...rawNotifications].sort((a, b) => {
+      const timeA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+      const timeB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+      return timeB - timeA;
+    });
+  }, [rawNotifications]);
 
   const unreadCount = useMemo(() => {
     return notifications?.filter(n => !n.read).length || 0;
@@ -68,7 +78,7 @@ export default function NotificationBell() {
   if (!user) return null;
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-primary transition-all active:scale-90">
           <Bell className="w-6 h-6" />
@@ -80,11 +90,23 @@ export default function NotificationBell() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-80 sm:w-96 rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl" align="end">
-        <div className="bg-primary p-6 text-white flex items-center justify-between">
-          <div>
+        <div className="bg-primary p-6 text-white flex items-center justify-between relative">
+          {/* Top Left Close Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-4 left-4 w-8 h-8 rounded-full bg-white/20 hover:bg-white/40 text-white shadow-sm transition-all active:scale-90 z-50 border border-white/10"
+            onClick={() => setOpen(false)}
+            aria-label="Close notifications"
+          >
+            <X className="w-4 h-4" />
+          </Button>
+
+          <div className="pl-10"> {/* Offset for close button */}
             <h3 className="font-headline font-black text-xl">Activity</h3>
             <p className="text-[10px] font-bold opacity-70 uppercase tracking-widest">Recent Notifications</p>
           </div>
+          
           {unreadCount > 0 && (
             <Button 
               variant="ghost" 
