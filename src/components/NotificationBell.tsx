@@ -11,7 +11,9 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
+  SheetDescription,
   SheetTrigger,
+  SheetClose,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -156,21 +158,24 @@ export default function NotificationBell() {
         {/* Header Section */}
         <div className="bg-primary p-8 text-white relative">
           {/* Top Left Close Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-6 left-6 w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 text-white shadow-sm border border-white/10 transition-transform active:scale-90"
-            onClick={() => setOpen(false)}
-            aria-label="Close notifications"
-          >
-            <X className="w-5 h-5" />
-          </Button>
+          <SheetClose asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-6 left-6 w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 text-white shadow-sm border border-white/10 transition-transform active:scale-90"
+              aria-label="Close notifications"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          </SheetClose>
 
           <div className="pl-12 flex flex-col gap-1">
-            <h3 className="font-headline font-black text-2xl tracking-tight">Notifications</h3>
-            <p className="text-[10px] font-bold opacity-70 uppercase tracking-widest">
-              Stay updated with your cravings
-            </p>
+            <SheetHeader className="text-left space-y-0">
+              <SheetTitle className="font-headline font-black text-2xl tracking-tight text-white">Notifications</SheetTitle>
+              <SheetDescription className="text-[10px] font-bold opacity-70 uppercase tracking-widest text-white/80">
+                Stay updated with your cravings
+              </SheetDescription>
+            </SheetHeader>
           </div>
           
           <div className="absolute bottom-6 left-8 right-8 flex justify-between items-center">
