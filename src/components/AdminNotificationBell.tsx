@@ -2,7 +2,7 @@
 "use client"
 
 import React, { useMemo, useState, useEffect, useRef } from 'react';
-import { Bell, Check, Info, ShoppingBag, X, Volume2, VolumeX, MessageSquare } from 'lucide-react';
+import { Bell, Check, Info, ShoppingBag, X, Volume2, VolumeX, MessageSquare, ChevronRight } from 'lucide-react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { collection, query, limit, doc, updateDoc, writeBatch } from 'firebase/firestore';
@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
+import Link from 'next/link';
 
 export default function AdminNotificationBell() {
   const { user } = useAuth();
@@ -234,6 +235,15 @@ export default function AdminNotificationBell() {
             )}
           </div>
         </ScrollArea>
+
+        {/* Action Link Footer */}
+        <div className="p-6 bg-muted/10 border-t border-dashed">
+          <Link href="/admin/notifications" onClick={() => setOpen(false)}>
+            <Button className="w-full h-12 rounded-2xl font-black bg-primary group hover:scale-[1.02] transition-all shadow-xl shadow-primary/10">
+              View All Alerts Center <ChevronRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </Button>
+          </Link>
+        </div>
       </SheetContent>
     </Sheet>
   );
