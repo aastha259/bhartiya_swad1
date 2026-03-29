@@ -4,7 +4,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ChefHat, Mail, Lock, Shield, ArrowRight, Loader2 } from 'lucide-react';
+import { ChefHat, Mail, Lock, Shield, ArrowRight, Loader2, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -289,6 +289,15 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6 relative overflow-hidden" suppressHydrationWarning>
+      {/* Navigation - Back to Home */}
+      <div className="absolute top-8 left-8 z-50">
+        <Link href="/">
+          <Button variant="ghost" className="font-bold gap-2 rounded-xl hover:bg-primary/10 transition-all text-muted-foreground hover:text-primary">
+            <ArrowLeft className="w-4 h-4" /> Back to Home
+          </Button>
+        </Link>
+      </div>
+
       <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none">
         <div className="grid grid-cols-12 gap-4 h-full w-full rotate-12 scale-150">
           {Array.from({ length: 48 }).map((_, i) => (
