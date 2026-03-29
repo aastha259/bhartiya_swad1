@@ -2,6 +2,7 @@
 "use client"
 
 import React, { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ChefHat, ArrowLeft, Send, MessageSquare, Mail, User, Loader2, Clock, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,7 @@ import toast from 'react-hot-toast';
 import { cn } from '@/lib/utils';
 
 export default function ContactPage() {
+  const router = useRouter();
   const db = useFirestore();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -29,7 +31,6 @@ export default function ContactPage() {
   });
 
   // Fetch user's previous inquiries
-  // Fixed: Removed orderBy to avoid requiring a composite index (userId + createdAt)
   const ticketsQuery = useMemoFirebase(() => {
     if (!user?.uid) return null;
     return query(
@@ -98,11 +99,19 @@ export default function ContactPage() {
             </div>
             <span className="font-headline text-2xl font-black text-foreground">Bhartiya Swad</span>
           </Link>
-          <Link href="/">
-            <Button variant="ghost" className="font-bold gap-2 rounded-xl">
-              <ArrowLeft className="w-4 h-4" /> Back to Home
-            </Button>
-          </Link>
+          <Button 
+            variant="ghost" 
+            className="font-bold gap-2 rounded-xl"
+            onClick={() => {
+              if (window.history.length > 1) {
+                router.back();
+              } else {
+                router.push('/');
+              }
+            }}
+          >
+            <ArrowLeft className="w-4 h-4" /> Back
+          </Button>
         </div>
       </nav>
 
