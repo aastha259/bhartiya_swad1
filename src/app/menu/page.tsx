@@ -77,12 +77,6 @@ export default function MenuPage() {
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    if (mounted && !loading && !user) {
-      router.push('/login?callbackUrl=/menu');
-    }
-  }, [user, loading, router, mounted]);
-
   // Simulate search feedback
   useEffect(() => {
     if (search) {
@@ -125,7 +119,7 @@ export default function MenuPage() {
     toast.success("Filters cleared");
   };
 
-  if (!mounted || loading || !user) {
+  if (!mounted || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FDFCFB]">
         <div className="flex flex-col items-center gap-4">

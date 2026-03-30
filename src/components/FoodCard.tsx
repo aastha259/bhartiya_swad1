@@ -39,7 +39,9 @@ export default function FoodCard({ food }: FoodCardProps) {
   const handleOrderNow = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user) {
-      toast.error("Please login to add items to cart");
+      // Save selected item temporarily
+      localStorage.setItem("pendingCartItem", JSON.stringify(food));
+      toast.success("Log in to add this to your cart!", { icon: '👋' });
       router.push(`/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`);
       return;
     }

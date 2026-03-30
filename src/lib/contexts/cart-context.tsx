@@ -1,11 +1,12 @@
 
 "use client"
 
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { createContext, useContext, useMemo, useEffect } from 'react';
 import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
 import { collection, doc, increment, deleteDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import toast from 'react-hot-toast';
 
 export interface CartItem {
   id: string; // This will be the dishId
@@ -63,6 +64,31 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }));
     });
   };
+
+  // Handle deferred add-to-cart after login
+  useEffect(() => {
+    const processPendingItem = async () => {
+      if (user && typeof window !== 'undefined') {
+        const pendingItem = localStorage.getItem("pendingCartItem");
+        if (pendingItem) {
+          try {
+            const item = JSON.parse(pendingItem);
+            addToCart(item);
+            localStorage.removeItem("pendingCartItem");
+            toast.success(`Welcome back! ${item.name} added to your basket.`, {
+              icon: '🍱',
+              duration: 4000
+            });
+          } catch (e) {
+            console.error("Error processing pending cart item", e);
+            localStorage.removeItem("pendingCartItem");
+          }
+        }
+      }
+    };
+
+    processPendingItem();
+  }, [user]);
 
   const updateQuantity = (id: string, delta: number) => {
     if (!user) return;

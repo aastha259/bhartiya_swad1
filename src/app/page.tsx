@@ -58,7 +58,7 @@ export default function LandingPage() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-6 items-start pt-4 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
-            <Link href="/login" className="w-full sm:w-auto">
+            <Link href="/menu" className="w-full sm:w-auto">
               <Button size="lg" className="w-full sm:w-auto h-16 px-10 text-xl rounded-3xl shadow-2xl shadow-primary/30 bg-gradient-to-br from-primary to-[#FF9933] hover:brightness-110 group font-black transition-all hover:scale-105 active:scale-95 text-white border-none">
                 Start Your Order 
                 <ArrowRight className="ml-3 w-6 h-6 group-hover:translate-x-2 transition-transform" />
