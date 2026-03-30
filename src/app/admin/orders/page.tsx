@@ -10,7 +10,9 @@ import {
   User, 
   CheckCircle2,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Star,
+  MessageSquare
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
@@ -196,10 +198,11 @@ export default function AdminOrdersPage() {
                         <Badge className={cn("rounded-full px-4 py-1.5 font-black text-[10px] uppercase tracking-wider border-none", getStatusColor(statusKey, order.isCancelled))}>
                           {order.isCancelled ? "Cancelled" : STATUS_LABELS[statusKey]}
                         </Badge>
-                        {order.isCancelled && (
-                          <span className="text-[8px] font-black text-red-600 uppercase ml-1">
-                            {order.paymentStatus === 'refunded' ? '✓ Refunded' : 'Refund Pending'}
-                          </span>
+                        {order.isRated && (
+                          <div className="flex items-center gap-1 mt-1 text-yellow-600">
+                            <Star className="w-2.5 h-2.5 fill-current" />
+                            <span className="text-[8px] font-black uppercase">Rated</span>
+                          </div>
                         )}
                       </div>
                     </TableCell>
@@ -226,8 +229,8 @@ export default function AdminOrdersPage() {
       </Card>
 
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <DialogContent className="sm:max-w-[600px] rounded-[2.5rem] p-0 overflow-hidden border-none bg-[#FDFCFB]">
-          <DialogHeader className={cn("p-10 text-white", selectedOrder?.isCancelled ? "bg-red-600" : "bg-primary")}>
+        <DialogContent className="sm:max-w-[600px] rounded-[2.5rem] p-0 overflow-hidden border-none bg-[#FDFCFB] max-h-[90vh] overflow-y-auto">
+          <DialogHeader className={cn("p-10 text-white sticky top-0 z-10", selectedOrder?.isCancelled ? "bg-red-600" : "bg-primary")}>
             <div className="flex items-center justify-between">
               <div>
                 <DialogTitle className="text-3xl font-headline font-black">
@@ -255,6 +258,45 @@ export default function AdminOrdersPage() {
                   <p className="text-xs text-red-700 mt-1">
                     Refund Status: <span className="font-black">{selectedOrder.paymentStatus?.toUpperCase()}</span>
                   </p>
+                </div>
+              </div>
+            )}
+
+            {/* CUSTOMER FEEDBACK SECTION */}
+            {selectedOrder?.isRated && (
+              <div className="space-y-4">
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Customer Experience Feedback</p>
+                <div className="p-6 bg-yellow-50/50 rounded-3xl border border-yellow-100 space-y-6">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="text-center">
+                      <p className="text-[8px] font-black text-muted-foreground uppercase mb-1">Taste</p>
+                      <div className="flex items-center justify-center gap-1">
+                        <span className="font-headline font-black text-lg text-yellow-700">{selectedOrder.ratings.taste}</span>
+                        <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                      </div>
+                    </div>
+                    <div className="text-center border-x border-yellow-100">
+                      <p className="text-[8px] font-black text-muted-foreground uppercase mb-1">Pack</p>
+                      <div className="flex items-center justify-center gap-1">
+                        <span className="font-headline font-black text-lg text-yellow-700">{selectedOrder.ratings.packaging}</span>
+                        <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[8px] font-black text-muted-foreground uppercase mb-1">Delivery</p>
+                      <div className="flex items-center justify-center gap-1">
+                        <span className="font-headline font-black text-lg text-yellow-700">{selectedOrder.ratings.delivery}</span>
+                        <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {selectedOrder.reviewText && (
+                    <div className="bg-white p-4 rounded-2xl border flex gap-3">
+                      <MessageSquare className="w-4 h-4 text-muted-foreground shrink-0 mt-1" />
+                      <p className="text-sm italic font-medium text-foreground">"{selectedOrder.reviewText}"</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

@@ -15,13 +15,16 @@ import {
   Utensils,
   Loader2,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Star,
+  Send
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { Textarea } from "@/components/ui/textarea"
 
 import { useFirestore, useDoc, useMemoFirebase } from "@/firebase"
 import { doc, updateDoc, serverTimestamp } from "firebase/firestore"
@@ -45,6 +48,13 @@ export default function OrderTrackingPage() {
   const db = useFirestore()
   const { user, loading: authLoading } = useAuth()
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
+  
+  // Rating states
+  const [taste, setTaste] = useState(0);
+  const [packaging, setPackaging] = useState(0);
+  const [delivery, setDelivery] = useState(0);
+  const [review, setReview] = useState("");
+  const [isSubmittingRating, setIsSubmittingRating] = useState(false);
 
   useEffect(() => {
     setCurrentTime(new Date());
@@ -63,7 +73,7 @@ export default function OrderTrackingPage() {
 
   const order = useMemo(() => normalizeOrder(rawOrder), [rawOrder]);
 
-  // AUTO-REFUND LOGIC (Simulated check every 10 seconds)
+  // AUTO-REFUND LOGIC
   useEffect(() => {
     const processAutoRefund = async () => {
       if (!order || !order.isCancelled || order.refundCompleted || !order.refundInitiatedAt || !currentTime) return;
@@ -71,7 +81,6 @@ export default function OrderTrackingPage() {
       const refundTime = order.refundInitiatedAt.toDate ? order.refundInitiatedAt.toDate() : new Date(order.refundInitiatedAt);
       const diffInMs = currentTime.getTime() - refundTime.getTime();
       
-      // Auto-complete refund after 5 minutes (300,000 ms)
       if (diffInMs > 5 * 60 * 1000) {
         try {
           await updateDoc(doc(db, "orders", order.id), {
@@ -93,7 +102,6 @@ export default function OrderTrackingPage() {
 
     const statusKey = computeOrderStatus(order.createdAt);
     
-    // ENFORCE CANCELLATION RESTRICTION
     if (statusKey === "out_for_delivery" || statusKey === "delivered") {
       alert("Cancellation not allowed after order is out for delivery");
       return;
@@ -108,13 +116,41 @@ export default function OrderTrackingPage() {
         status: "cancelled",
         isCancelled: true,
         cancelledAt: serverTimestamp(),
-        // Online payments initiate a refund flow
         refundInitiated: order.paymentMethod === 'Online' || order.paymentMethod === 'online',
         refundInitiatedAt: (order.paymentMethod === 'Online' || order.paymentMethod === 'online') ? serverTimestamp() : null
       });
       toast.success("Order cancelled successfully.", { id: cancelToast });
     } catch (err) {
       toast.error("Failed to cancel order.", { id: cancelToast });
+    }
+  };
+
+  const handleSubmitRating = async () => {
+    if (!taste || !packaging || !delivery) {
+      toast.error("Please provide ratings for all factors.");
+      return;
+    }
+
+    setIsSubmittingRating(true);
+    const ratingToast = toast.loading("Submitting your feedback...");
+
+    try {
+      await updateDoc(doc(db, "orders", order.id), {
+        isRated: true,
+        ratings: {
+          taste: Number(taste),
+          packaging: Number(packaging),
+          delivery: Number(delivery)
+        },
+        reviewText: review,
+        ratedAt: serverTimestamp()
+      });
+      toast.success("Thank you for your feedback!", { id: ratingToast });
+    } catch (err) {
+      console.error("Rating Error:", err);
+      toast.error("Failed to submit rating.", { id: ratingToast });
+    } finally {
+      setIsSubmittingRating(false);
     }
   };
 
@@ -160,8 +196,8 @@ export default function OrderTrackingPage() {
   const statusKey = order.isCancelled ? 'cancelled' : computeOrderStatus(order.createdAt);
   const currentStepIndex = TRACKING_STEPS.findIndex(step => step.id === statusKey)
 
-  // HIDE CANCEL BUTTON WHEN NOT ALLOWED
   const canCancel = !order.isCancelled && statusKey !== 'out_for_delivery' && statusKey !== 'delivered';
+  const showRatingUI = statusKey === 'delivered' && !order.isRated;
 
   return (
     <div className="min-h-screen bg-[#FDFCFB] pb-20">
@@ -290,6 +326,125 @@ export default function OrderTrackingPage() {
                     </div>
                   )
                 })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* FEEDBACK & RATING SECTION */}
+        {showRatingUI && (
+          <Card className="border-none shadow-2xl rounded-[3rem] overflow-hidden bg-white animate-in slide-in-from-bottom-8 duration-700">
+            <div className="bg-primary p-8 text-white text-center">
+              <h2 className="text-3xl font-headline font-black">How was your meal?</h2>
+              <p className="text-white/70 font-bold mt-1">Your feedback helps us improve our authentic flavors.</p>
+            </div>
+            <CardContent className="p-10 space-y-10">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {/* Taste Rating */}
+                <div className="flex flex-col items-center gap-4 p-6 bg-muted/20 rounded-[2rem] border border-transparent hover:border-primary/10 transition-all">
+                  <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-primary">
+                    <Utensils className="w-6 h-6" />
+                  </div>
+                  <p className="font-black text-xs uppercase tracking-widest text-muted-foreground">Taste</p>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Star 
+                        key={s} 
+                        onClick={() => setTaste(s)}
+                        className={cn("w-6 h-6 cursor-pointer transition-all", s <= taste ? "fill-yellow-400 text-yellow-400 scale-110" : "text-muted-foreground/30")}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Packaging Rating */}
+                <div className="flex flex-col items-center gap-4 p-6 bg-muted/20 rounded-[2rem] border border-transparent hover:border-primary/10 transition-all">
+                  <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-primary">
+                    <Package className="w-6 h-6" />
+                  </div>
+                  <p className="font-black text-xs uppercase tracking-widest text-muted-foreground">Packaging</p>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Star 
+                        key={s} 
+                        onClick={() => setPackaging(s)}
+                        className={cn("w-6 h-6 cursor-pointer transition-all", s <= packaging ? "fill-yellow-400 text-yellow-400 scale-110" : "text-muted-foreground/30")}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Delivery Rating */}
+                <div className="flex flex-col items-center gap-4 p-6 bg-muted/20 rounded-[2rem] border border-transparent hover:border-primary/10 transition-all">
+                  <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-primary">
+                    <Truck className="w-6 h-6" />
+                  </div>
+                  <p className="font-black text-xs uppercase tracking-widest text-muted-foreground">Delivery</p>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Star 
+                        key={s} 
+                        onClick={() => setDelivery(s)}
+                        className={cn("w-6 h-6 cursor-pointer transition-all", s <= delivery ? "fill-yellow-400 text-yellow-400 scale-110" : "text-muted-foreground/30")}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <p className="font-black text-xs uppercase tracking-widest text-muted-foreground ml-2">Any additional comments?</p>
+                <Textarea 
+                  placeholder="Tell us more about your experience..."
+                  value={review}
+                  onChange={(e) => setReview(e.target.value)}
+                  className="min-h-[120px] rounded-[2rem] p-6 border-none bg-muted/30 focus-visible:ring-primary/20 text-lg transition-all"
+                />
+              </div>
+
+              <Button 
+                onClick={handleSubmitRating}
+                disabled={isSubmittingRating || !taste || !packaging || !delivery}
+                className="w-full h-16 rounded-[2rem] bg-primary hover:bg-primary/90 text-white font-black text-xl shadow-xl shadow-primary/20 group active:scale-95 transition-all"
+              >
+                {isSubmittingRating ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-6 h-6 animate-spin" /> <span>Publishing Feedback...</span>
+                  </div>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    Submit Experience <Send className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                  </span>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {order.isRated && (
+          <Card className="border-none shadow-sm rounded-[2.5rem] bg-green-50 overflow-hidden animate-in fade-in duration-1000">
+            <CardContent className="p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-4 text-center md:text-left">
+                <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center text-green-600 shrink-0">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-headline font-black text-green-900">Feedback Recorded</h3>
+                  <p className="text-green-700 font-medium">Thank you for helping us serve you better! ⭐</p>
+                </div>
+              </div>
+              <div className="bg-white/50 backdrop-blur-sm px-6 py-3 rounded-2xl border border-green-100 flex gap-4">
+                <div className="text-center">
+                  <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">Score</p>
+                  <p className="font-headline font-black text-green-700 text-lg">
+                    {((order.ratings.taste + order.ratings.packaging + order.ratings.delivery) / 3).toFixed(1)}
+                  </p>
+                </div>
+                <div className="w-px bg-green-100" />
+                <div className="text-center">
+                  <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">Points</p>
+                  <p className="font-headline font-black text-green-700 text-lg">+10</p>
+                </div>
               </div>
             </CardContent>
           </Card>

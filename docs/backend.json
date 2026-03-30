@@ -83,6 +83,17 @@
             "address": { "type": "string" }
           }
         },
+        "isRated": { "type": "boolean" },
+        "ratings": {
+          "type": "object",
+          "properties": {
+            "taste": { "type": "number" },
+            "packaging": { "type": "number" },
+            "delivery": { "type": "number" }
+          }
+        },
+        "reviewText": { "type": "string" },
+        "ratedAt": { "type": "object" },
         "createdAt": { "type": "object" }
       },
       "required": ["userId", "items", "totalAmount", "status", "createdAt"]

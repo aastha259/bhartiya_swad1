@@ -31,6 +31,10 @@ export const normalizeOrder = (order: any) => {
     refundInitiatedAt: order.refundInitiatedAt,
     refundCompleted: !!order.refundCompleted,
     paymentMethod: order.paymentMethod || 'COD',
-    paymentStatus: order.paymentStatus || 'pending'
+    paymentStatus: order.paymentStatus || 'pending',
+    isRated: !!order.isRated,
+    ratings: order.ratings || { taste: 0, packaging: 0, delivery: 0 },
+    reviewText: order.reviewText || '',
+    ratedAt: order.ratedAt
   };
 };
