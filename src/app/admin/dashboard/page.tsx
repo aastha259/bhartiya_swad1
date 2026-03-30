@@ -1,3 +1,4 @@
+
 "use client"
 import { normalizeOrder } from '@/lib/normalizeOrder';
 import React, { useMemo, useState, useEffect } from 'react';
@@ -127,6 +128,8 @@ export default function AdminDashboardPage() {
   const stats = useMemo(() => {
     const totalOrdersCount = validOrders.length;
     const totalRevenue = validOrders.reduce((acc, o) => acc + (o.isCancelled ? 0 : (o.totalAmount || 0)), 0);
+    
+    // TRACK CANCELLED VS ACTIVE ORDERS
     const cancelledOrdersCount = validOrders.filter(o => o.isCancelled).length;
     const activeOrdersCount = totalOrdersCount - cancelledOrdersCount;
     

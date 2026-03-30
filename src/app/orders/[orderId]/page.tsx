@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useMemo, useState, useEffect } from "react"
@@ -62,7 +63,7 @@ export default function OrderTrackingPage() {
 
   const order = useMemo(() => normalizeOrder(rawOrder), [rawOrder]);
 
-  // AUTO-REFUND LOGIC (After 5 minutes of cancellation)
+  // AUTO-REFUND LOGIC (Simulated check every 10 seconds)
   useEffect(() => {
     const processAutoRefund = async () => {
       if (!order || !order.isCancelled || order.refundCompleted || !order.refundInitiatedAt || !currentTime) return;
@@ -70,6 +71,7 @@ export default function OrderTrackingPage() {
       const refundTime = order.refundInitiatedAt.toDate ? order.refundInitiatedAt.toDate() : new Date(order.refundInitiatedAt);
       const diffInMs = currentTime.getTime() - refundTime.getTime();
       
+      // Auto-complete refund after 5 minutes (300,000 ms)
       if (diffInMs > 5 * 60 * 1000) {
         try {
           await updateDoc(doc(db, "orders", order.id), {
@@ -88,6 +90,15 @@ export default function OrderTrackingPage() {
 
   const handleCancel = async () => {
     if (!order) return;
+
+    const statusKey = computeOrderStatus(order.createdAt);
+    
+    // ENFORCE CANCELLATION RESTRICTION
+    if (statusKey === "out_for_delivery" || statusKey === "delivered") {
+      alert("Cancellation not allowed after order is out for delivery");
+      return;
+    }
+
     const confirmCancel = window.confirm("Are you sure you want to cancel this order? This action cannot be undone.");
     if (!confirmCancel) return;
 
@@ -97,8 +108,9 @@ export default function OrderTrackingPage() {
         status: "cancelled",
         isCancelled: true,
         cancelledAt: serverTimestamp(),
-        refundInitiated: order.paymentStatus === 'Paid' || order.paymentMethod === 'Online',
-        refundInitiatedAt: (order.paymentStatus === 'Paid' || order.paymentMethod === 'Online') ? serverTimestamp() : null
+        // Online payments initiate a refund flow
+        refundInitiated: order.paymentMethod === 'Online' || order.paymentMethod === 'online',
+        refundInitiatedAt: (order.paymentMethod === 'Online' || order.paymentMethod === 'online') ? serverTimestamp() : null
       });
       toast.success("Order cancelled successfully.", { id: cancelToast });
     } catch (err) {
@@ -148,6 +160,7 @@ export default function OrderTrackingPage() {
   const statusKey = order.isCancelled ? 'cancelled' : computeOrderStatus(order.createdAt);
   const currentStepIndex = TRACKING_STEPS.findIndex(step => step.id === statusKey)
 
+  // HIDE CANCEL BUTTON WHEN NOT ALLOWED
   const canCancel = !order.isCancelled && statusKey !== 'out_for_delivery' && statusKey !== 'delivered';
 
   return (
@@ -184,7 +197,7 @@ export default function OrderTrackingPage() {
               <Button 
                 variant="destructive" 
                 onClick={handleCancel}
-                className="rounded-full px-6 font-black h-10 shadow-lg shadow-destructive/20 gap-2"
+                className="rounded-full px-6 font-black h-10 shadow-lg shadow-destructive/20 gap-2 active:scale-95 transition-all"
               >
                 <XCircle className="w-4 h-4" /> Cancel Order
               </Button>
@@ -200,7 +213,7 @@ export default function OrderTrackingPage() {
         </div>
 
         {order.isCancelled ? (
-          <Card className="border-red-100 bg-red-50/30 shadow-sm rounded-[3rem] overflow-hidden">
+          <Card className="border-red-100 bg-red-50/30 shadow-sm rounded-[3rem] overflow-hidden animate-in zoom-in duration-500">
             <CardContent className="p-12 text-center space-y-6">
               <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto text-red-600">
                 <XCircle className="w-10 h-10" />
@@ -210,21 +223,27 @@ export default function OrderTrackingPage() {
                 <p className="text-red-700 font-medium">We're sorry this meal didn't work out. Feel free to explore our menu for other options.</p>
               </div>
               
-              {(order.paymentMethod === 'Online' || order.paymentStatus === 'Paid') && (
+              {(order.paymentMethod?.toLowerCase() === 'online' || order.paymentStatus === 'Paid') && (
                 <div className="p-6 bg-white border border-red-100 rounded-3xl max-w-lg mx-auto shadow-sm">
-                  {order.refundCompleted ? (
-                    <div className="flex items-center justify-center gap-3 text-green-700 font-black">
-                      <CheckCircle2 className="w-6 h-6" />
-                      Payment Refunded Successfully
+                  {order.paymentStatus === 'refunded' ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="flex items-center justify-center gap-3 text-green-700 font-black">
+                        <CheckCircle2 className="w-6 h-6" />
+                        Payment Refunded ✅
+                      </div>
+                      <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Verified transaction complete</p>
                     </div>
                   ) : (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-center gap-3 text-red-700 font-bold">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-center gap-3 text-green-600 font-bold">
                         <AlertCircle className="w-5 h-5" />
                         Refund Process Initiated
                       </div>
-                      <p className="text-xs text-muted-foreground font-medium italic">
-                        Your refund is being processed by the bank gateway. It typically appears in your account within 2-3 working days.
+                      <p className="text-sm text-green-600 font-semibold leading-relaxed">
+                        Refund will be initiated. It will be processed within 2–3 working days.
+                      </p>
+                      <p className="text-[10px] text-muted-foreground font-medium italic">
+                        Your bank normally updates the statement within 48-72 hours.
                       </p>
                     </div>
                   )}
