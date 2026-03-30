@@ -24,6 +24,13 @@ export const normalizeOrder = (order: any) => {
     userEmail: order.userEmail || '',
     status: order.status || 'placed',
     createdAt: order.createdAt,
-    deliveryDetails: order.deliveryDetails || {}
+    deliveryDetails: order.deliveryDetails || {},
+    isCancelled: !!order.isCancelled,
+    cancelledAt: order.cancelledAt,
+    refundInitiated: !!order.refundInitiated,
+    refundInitiatedAt: order.refundInitiatedAt,
+    refundCompleted: !!order.refundCompleted,
+    paymentMethod: order.paymentMethod || 'COD',
+    paymentStatus: order.paymentStatus || 'pending'
   };
 };

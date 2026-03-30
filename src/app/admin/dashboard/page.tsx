@@ -1,4 +1,3 @@
-
 "use client"
 import { normalizeOrder } from '@/lib/normalizeOrder';
 import React, { useMemo, useState, useEffect } from 'react';
@@ -6,14 +5,15 @@ import {
   TrendingUp, 
   ShoppingBag, 
   Users, 
-  Store,
-  ArrowUpRight,
-  ArrowDownRight,
-  Calendar,
-  ChevronRight,
   Clock,
   Utensils,
-  Trophy
+  Trophy,
+  Calendar,
+  ChevronRight,
+  ArrowUpRight,
+  ArrowDownRight,
+  XCircle,
+  CheckCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -50,7 +50,6 @@ export default function AdminDashboardPage() {
 
   const ordersQuery = useMemoFirebase(() => {
     if (!isAuthorized || !currentTime) return null;
-    // Base the calculation on start of day to avoid minor hydration variations
     const thirtyDaysAgo = subDays(startOfDay(currentTime), 30);
     return query(
       collection(db, 'orders'), 
@@ -66,12 +65,6 @@ export default function AdminDashboardPage() {
     return collection(db, 'users');
   }, [db, isAuthorized]);
   const { data: users } = useCollection(usersQuery);
-
-  const restaurantsQuery = useMemoFirebase(() => {
-    if (!isAuthorized) return null;
-    return collection(db, 'restaurants');
-  }, [db, isAuthorized]);
-  const { data: restaurants } = useCollection(restaurantsQuery);
 
   const validOrders = useMemo(() => {
     if (!orders) return [];
@@ -97,6 +90,7 @@ export default function AdminDashboardPage() {
     // 2. Top Selling Dishes
     const dishPerformance: Record<string, { name: string; qty: number; revenue: number }> = {};
     validOrders.forEach(order => {
+      if (order.isCancelled) return; // Don't count revenue for cancelled orders
       order.items?.forEach((item: any) => {
         const id = item.dishId || item.name;
         if (!dishPerformance[id]) {
@@ -132,15 +126,15 @@ export default function AdminDashboardPage() {
 
   const stats = useMemo(() => {
     const totalOrdersCount = validOrders.length;
-    const totalRevenue = validOrders.reduce((acc, o) => acc + (o.totalAmount || 0), 0);
-    const activeCustomerIds = new Set(validOrders.map(o => o.userId).filter(Boolean));
-    const totalCustomers = activeCustomerIds.size;
+    const totalRevenue = validOrders.reduce((acc, o) => acc + (o.isCancelled ? 0 : (o.totalAmount || 0)), 0);
+    const cancelledOrdersCount = validOrders.filter(o => o.isCancelled).length;
+    const activeOrdersCount = totalOrdersCount - cancelledOrdersCount;
     
     return [
       { label: 'Revenue (30d)', value: `₹${totalRevenue.toLocaleString()}`, icon: TrendingUp, color: 'text-primary', bg: 'bg-primary/10', trend: '+12%', isUp: true },
-      { label: 'Orders (30d)', value: totalOrdersCount.toLocaleString(), icon: ShoppingBag, color: 'text-accent', bg: 'bg-accent/10', trend: '+8%', isUp: true },
-      { label: 'Active Users', value: totalCustomers.toLocaleString(), icon: Users, color: 'text-blue-600', bg: 'bg-blue-600/10', trend: '+5%', isUp: true },
-      { label: 'Peak Traffic', value: insights.peakHour, icon: Clock, color: 'text-green-600', bg: 'bg-green-600/10', trend: 'Live', isUp: true },
+      { label: 'Active Orders', value: activeOrdersCount.toLocaleString(), icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-600/10', trend: `${totalOrdersCount} Total`, isUp: true },
+      { label: 'Cancellations', value: cancelledOrdersCount.toLocaleString(), icon: XCircle, color: 'text-red-600', bg: 'bg-red-600/10', trend: 'Audit', isUp: false },
+      { label: 'Peak Traffic', value: insights.peakHour, icon: Clock, color: 'text-blue-600', bg: 'bg-blue-600/10', trend: 'Live', isUp: true },
     ];
   }, [validOrders, insights.peakHour]);
 
@@ -151,7 +145,7 @@ export default function AdminDashboardPage() {
       const dayLabel = format(date, 'MMM dd');
       const revenue = validOrders
         .filter(o => {
-          if (!o.createdAt) return false;
+          if (!o.createdAt || o.isCancelled) return false;
           const orderDate = o.createdAt?.toDate ? o.createdAt.toDate() : new Date(o.createdAt);
           return isSameDay(orderDate, date);
         })
@@ -191,7 +185,6 @@ export default function AdminDashboardPage() {
                   "flex items-center gap-1 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest",
                   stat.isUp ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
                 )}>
-                  {stat.isUp ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
                   {stat.trend}
                 </div>
               </div>
@@ -208,7 +201,7 @@ export default function AdminDashboardPage() {
           <div className="flex items-center justify-between mb-10">
             <div>
               <h3 className="text-2xl font-headline font-black text-foreground">Revenue Trends</h3>
-              <p className="text-sm text-muted-foreground mt-1">Real-time daily revenue calculation.</p>
+              <p className="text-sm text-muted-foreground mt-1">Real-time daily revenue calculation (excluding cancellations).</p>
             </div>
             <Badge className="bg-primary/10 text-primary border-none rounded-full px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">Live Data</Badge>
           </div>
@@ -301,65 +294,6 @@ export default function AdminDashboardPage() {
                   <TableCell colSpan={3} className="text-center py-20 text-muted-foreground font-bold italic opacity-40">
                     <ShoppingBag className="w-12 h-12 mx-auto mb-4 opacity-20" />
                     Waiting for sales data...
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </Card>
-
-      <Card className="border shadow-sm rounded-[2.5rem] overflow-hidden bg-white">
-        <CardHeader className="p-10 border-b flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="text-2xl font-headline font-black text-foreground">Recent Activity</CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">The latest validated order records.</p>
-          </div>
-          <Link href="/admin/orders">
-            <Button variant="outline" className="rounded-xl font-bold border-primary text-primary hover:bg-primary hover:text-white transition-all">
-              View All Orders
-              <ChevronRight className="ml-2 w-4 h-4" />
-            </Button>
-          </Link>
-        </CardHeader>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader className="bg-muted/30">
-              <TableRow className="hover:bg-transparent border-none">
-                <TableHead className="font-black px-10 h-16 uppercase tracking-widest text-[10px]">Order ID</TableHead>
-                <TableHead className="font-black h-16 uppercase tracking-widest text-[10px]">Revenue</TableHead>
-                <TableHead className="font-black h-16 uppercase tracking-widest text-[10px]">Status</TableHead>
-                <TableHead className="font-black h-16 uppercase tracking-widest text-[10px]">Timestamp</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {validOrders.slice(0, 5).map((order) => {
-                const statusKey = computeOrderStatus(order.createdAt);
-                const statusLabel = STATUS_LABELS[statusKey];
-                return (
-                  <TableRow key={order.id} className="hover:bg-muted/5 transition-colors border-b last:border-none group">
-                    <TableCell className="px-10 font-mono text-xs font-bold text-muted-foreground">#{(order.orderId || order.id).slice(0, 8).toUpperCase()}</TableCell>
-                    <TableCell className="font-black text-primary text-lg">₹{(order.totalAmount || 0).toLocaleString()}</TableCell>
-                    <TableCell>
-                      <Badge className={cn(
-                        "rounded-full px-4 py-1 font-bold text-[10px] uppercase tracking-wider border-none",
-                        statusKey === 'delivered' ? 'bg-green-100 text-green-700' : 
-                        statusKey === 'preparing' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'
-                      )}>
-                        {statusLabel}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground font-bold italic">
-                      {order.createdAt ? format(order.createdAt.toDate ? order.createdAt.toDate() : new Date(order.createdAt), 'p, MMM dd') : 'Just now'}
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-              {validOrders.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center py-20 text-muted-foreground font-bold italic opacity-40">
-                    <ShoppingBag className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                    Waiting for new orders...
                   </TableCell>
                 </TableRow>
               )}

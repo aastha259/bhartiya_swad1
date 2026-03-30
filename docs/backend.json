@@ -67,9 +67,14 @@
         "userEmail": { "type": "string" },
         "items": { "type": "array", "items": { "$ref": "#/entities/CartItem" } },
         "totalAmount": { "type": "number" },
-        "status": { "type": "string", "enum": ["placed", "preparing", "out_for_delivery", "delivered"] },
+        "status": { "type": "string", "enum": ["placed", "preparing", "out_for_delivery", "delivered", "cancelled"] },
         "paymentMethod": { "type": "string" },
-        "paymentStatus": { "type": "string" },
+        "paymentStatus": { "type": "string", "enum": ["pending", "paid", "refunded"] },
+        "isCancelled": { "type": "boolean" },
+        "cancelledAt": { "type": "object" },
+        "refundInitiated": { "type": "boolean" },
+        "refundInitiatedAt": { "type": "object" },
+        "refundCompleted": { "type": "boolean" },
         "deliveryDetails": {
           "type": "object",
           "properties": {

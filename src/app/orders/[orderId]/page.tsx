@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useMemo, useState, useEffect } from "react"
@@ -14,6 +13,8 @@ import {
   Clock,
   Utensils,
   Loader2,
+  XCircle,
+  AlertCircle
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -22,11 +23,12 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 
 import { useFirestore, useDoc, useMemoFirebase } from "@/firebase"
-import { doc } from "firebase/firestore"
+import { doc, updateDoc, serverTimestamp } from "firebase/firestore"
 import { useAuth } from "@/lib/contexts/auth-context"
 import NotificationBell from "@/components/NotificationBell"
 import { cn, computeOrderStatus, STATUS_LABELS } from "@/lib/utils"
 import { normalizeOrder } from "@/lib/normalizeOrder"
+import toast from "react-hot-toast"
 
 const TRACKING_STEPS = [
   { id: "placed", label: "Order Placed", icon: Clock, color: "bg-blue-500" },
@@ -59,6 +61,50 @@ export default function OrderTrackingPage() {
   const { data: rawOrder, isLoading: orderLoading, error } = useDoc(orderRef)
 
   const order = useMemo(() => normalizeOrder(rawOrder), [rawOrder]);
+
+  // AUTO-REFUND LOGIC (After 5 minutes of cancellation)
+  useEffect(() => {
+    const processAutoRefund = async () => {
+      if (!order || !order.isCancelled || order.refundCompleted || !order.refundInitiatedAt || !currentTime) return;
+      
+      const refundTime = order.refundInitiatedAt.toDate ? order.refundInitiatedAt.toDate() : new Date(order.refundInitiatedAt);
+      const diffInMs = currentTime.getTime() - refundTime.getTime();
+      
+      if (diffInMs > 5 * 60 * 1000) {
+        try {
+          await updateDoc(doc(db, "orders", order.id), {
+            paymentStatus: "refunded",
+            refundCompleted: true
+          });
+          toast.success("Refund processed successfully!");
+        } catch (e) {
+          console.warn("Auto-refund sync issue", e);
+        }
+      }
+    };
+    
+    processAutoRefund();
+  }, [order, currentTime, db]);
+
+  const handleCancel = async () => {
+    if (!order) return;
+    const confirmCancel = window.confirm("Are you sure you want to cancel this order? This action cannot be undone.");
+    if (!confirmCancel) return;
+
+    const cancelToast = toast.loading("Processing cancellation...");
+    try {
+      await updateDoc(doc(db, "orders", order.id), {
+        status: "cancelled",
+        isCancelled: true,
+        cancelledAt: serverTimestamp(),
+        refundInitiated: order.paymentStatus === 'Paid' || order.paymentMethod === 'Online',
+        refundInitiatedAt: (order.paymentStatus === 'Paid' || order.paymentMethod === 'Online') ? serverTimestamp() : null
+      });
+      toast.success("Order cancelled successfully.", { id: cancelToast });
+    } catch (err) {
+      toast.error("Failed to cancel order.", { id: cancelToast });
+    }
+  };
 
   if (authLoading || orderLoading || !currentTime) {
     return (
@@ -99,9 +145,10 @@ export default function OrderTrackingPage() {
   const displayOrderId = order.orderId || orderId || "Unknown"
   const totalAmount = order.totalAmount ?? 0
   
-  const statusKey = computeOrderStatus(order.createdAt);
-
+  const statusKey = order.isCancelled ? 'cancelled' : computeOrderStatus(order.createdAt);
   const currentStepIndex = TRACKING_STEPS.findIndex(step => step.id === statusKey)
+
+  const canCancel = !order.isCancelled && statusKey !== 'out_for_delivery' && statusKey !== 'delivered';
 
   return (
     <div className="min-h-screen bg-[#FDFCFB] pb-20">
@@ -132,56 +179,102 @@ export default function OrderTrackingPage() {
               Order ID: #{String(displayOrderId).slice(0, 16).toUpperCase()}
             </p>
           </div>
-          <Badge className={cn(
-            "rounded-full px-6 py-2 font-black text-sm uppercase border-none shadow-sm",
-            TRACKING_STEPS[currentStepIndex]?.color || "bg-primary",
-            "text-white"
-          )}>
-            {STATUS_LABELS[statusKey]}
-          </Badge>
+          <div className="flex items-center gap-4">
+            {canCancel && (
+              <Button 
+                variant="destructive" 
+                onClick={handleCancel}
+                className="rounded-full px-6 font-black h-10 shadow-lg shadow-destructive/20 gap-2"
+              >
+                <XCircle className="w-4 h-4" /> Cancel Order
+              </Button>
+            )}
+            <Badge className={cn(
+              "rounded-full px-6 py-2 font-black text-sm uppercase border-none shadow-sm",
+              order.isCancelled ? "bg-red-600" : (TRACKING_STEPS[currentStepIndex]?.color || "bg-primary"),
+              "text-white"
+            )}>
+              {order.isCancelled ? "Order Cancelled" : STATUS_LABELS[statusKey]}
+            </Badge>
+          </div>
         </div>
 
-        <Card className="border shadow-xl rounded-[3rem] overflow-hidden bg-white">
-          <CardContent className="p-10 md:p-16">
-            <div className="relative flex flex-col md:flex-row justify-between items-center gap-12 md:gap-4">
-              <div className="absolute top-1/2 left-0 w-full h-1 bg-muted -translate-y-1/2 hidden md:block" />
-              <div 
-                className="absolute top-1/2 left-0 h-1 bg-primary -translate-y-1/2 hidden md:block transition-all duration-1000" 
-                style={{ width: `${(currentStepIndex / (TRACKING_STEPS.length - 1)) * 100}%` }}
-              />
-
-              {TRACKING_STEPS.map((step, index) => {
-                const Icon = step.icon
-                const isCompleted = index < currentStepIndex
-                const isActive = index === currentStepIndex
-
-                return (
-                  <div key={step.id} className="relative z-10 flex flex-col items-center group w-full md:w-auto">
-                    <div
-                      className={cn(
-                        "w-20 h-20 flex items-center justify-center rounded-[2rem] transition-all duration-500 border-4",
-                        isCompleted ? "bg-green-500 border-green-100 text-white shadow-lg shadow-green-200" :
-                        isActive ? `${step.color} border-white text-white shadow-2xl scale-110 ring-4 ring-primary/10` :
-                        "bg-white border-muted text-muted-foreground grayscale opacity-40"
-                      )}
-                    >
-                      {isCompleted ? <CheckCircle2 className="w-8 h-8" /> : <Icon className="w-8 h-8" />}
+        {order.isCancelled ? (
+          <Card className="border-red-100 bg-red-50/30 shadow-sm rounded-[3rem] overflow-hidden">
+            <CardContent className="p-12 text-center space-y-6">
+              <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto text-red-600">
+                <XCircle className="w-10 h-10" />
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-3xl font-headline font-black text-red-900">This order was cancelled</h2>
+                <p className="text-red-700 font-medium">We're sorry this meal didn't work out. Feel free to explore our menu for other options.</p>
+              </div>
+              
+              {(order.paymentMethod === 'Online' || order.paymentStatus === 'Paid') && (
+                <div className="p-6 bg-white border border-red-100 rounded-3xl max-w-lg mx-auto shadow-sm">
+                  {order.refundCompleted ? (
+                    <div className="flex items-center justify-center gap-3 text-green-700 font-black">
+                      <CheckCircle2 className="w-6 h-6" />
+                      Payment Refunded Successfully
                     </div>
-                    <div className="mt-6 text-center">
-                      <p className={cn(
-                        "font-headline font-black text-sm uppercase tracking-wider",
-                        isActive ? "text-foreground" : "text-muted-foreground"
-                      )}>
-                        {step.label}
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-center gap-3 text-red-700 font-bold">
+                        <AlertCircle className="w-5 h-5" />
+                        Refund Process Initiated
+                      </div>
+                      <p className="text-xs text-muted-foreground font-medium italic">
+                        Your refund is being processed by the bank gateway. It typically appears in your account within 2-3 working days.
                       </p>
-                      {isActive && <p className="text-[10px] text-primary font-black mt-1 animate-pulse">LIVE UPDATING</p>}
                     </div>
-                  </div>
-                )
-              })}
-            </div>
-          </CardContent>
-        </Card>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="border shadow-xl rounded-[3rem] overflow-hidden bg-white">
+            <CardContent className="p-10 md:p-16">
+              <div className="relative flex flex-col md:flex-row justify-between items-center gap-12 md:gap-4">
+                <div className="absolute top-1/2 left-0 w-full h-1 bg-muted -translate-y-1/2 hidden md:block" />
+                <div 
+                  className="absolute top-1/2 left-0 h-1 bg-primary -translate-y-1/2 hidden md:block transition-all duration-1000" 
+                  style={{ width: `${(currentStepIndex / (TRACKING_STEPS.length - 1)) * 100}%` }}
+                />
+
+                {TRACKING_STEPS.map((step, index) => {
+                  const Icon = step.icon
+                  const isCompleted = index < currentStepIndex
+                  const isActive = index === currentStepIndex
+
+                  return (
+                    <div key={step.id} className="relative z-10 flex flex-col items-center group w-full md:w-auto">
+                      <div
+                        className={cn(
+                          "w-20 h-20 flex items-center justify-center rounded-[2rem] transition-all duration-500 border-4",
+                          isCompleted ? "bg-green-500 border-green-100 text-white shadow-lg shadow-green-200" :
+                          isActive ? `${step.color} border-white text-white shadow-2xl scale-110 ring-4 ring-primary/10` :
+                          "bg-white border-muted text-muted-foreground grayscale opacity-40"
+                        )}
+                      >
+                        {isCompleted ? <CheckCircle2 className="w-8 h-8" /> : <Icon className="w-8 h-8" />}
+                      </div>
+                      <div className="mt-6 text-center">
+                        <p className={cn(
+                          "font-headline font-black text-sm uppercase tracking-wider",
+                          isActive ? "text-foreground" : "text-muted-foreground"
+                        )}>
+                          {step.label}
+                        </p>
+                        {isActive && <p className="text-[10px] text-primary font-black mt-1 animate-pulse">LIVE UPDATING</p>}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <Card className="lg:col-span-2 border shadow-sm rounded-[2.5rem] bg-white overflow-hidden">
@@ -236,7 +329,9 @@ export default function OrderTrackingPage() {
                   </div>
                   <div>
                     <p className="font-black text-[10px] uppercase tracking-widest text-muted-foreground">Delivery Partner</p>
-                    <p className="font-bold text-foreground">Assigned & Navigating</p>
+                    <p className="font-bold text-foreground">
+                      {order.isCancelled ? 'Not applicable' : 'Assigned & Navigating'}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
@@ -245,7 +340,9 @@ export default function OrderTrackingPage() {
                   </div>
                   <div>
                     <p className="font-black text-[10px] uppercase tracking-widest text-muted-foreground">Est. Delivery</p>
-                    <p className="font-bold text-foreground">25-35 Minutes</p>
+                    <p className="font-bold text-foreground">
+                      {order.isCancelled ? 'N/A' : '25-35 Minutes'}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -256,9 +353,11 @@ export default function OrderTrackingPage() {
                 </p>
               </div>
               
-              <Button variant="outline" className="w-full h-12 rounded-2xl font-black border-primary text-primary hover:bg-primary hover:text-white transition-all">
-                Contact Support
-              </Button>
+              <Link href="/contact" className="block w-full">
+                <Button variant="outline" className="w-full h-12 rounded-2xl font-black border-primary text-primary hover:bg-primary hover:text-white transition-all">
+                  Contact Support
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         </div>

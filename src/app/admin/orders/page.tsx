@@ -1,16 +1,15 @@
-
 "use client"
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
   ShoppingBag, 
   Search, 
-  Filter, 
   Eye, 
   Clock, 
   User, 
-  Loader2,
-  CheckCircle2
+  CheckCircle2,
+  XCircle,
+  AlertCircle
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
@@ -92,7 +91,8 @@ export default function AdminOrdersPage() {
     }) || [];
   }, [orders, users, search]);
 
-  const getStatusColor = (statusKey: string) => {
+  const getStatusColor = (statusKey: string, isCancelled: boolean) => {
+    if (isCancelled) return 'bg-red-100 text-red-700 border-red-200';
     switch (statusKey) {
       case 'delivered': return 'bg-green-100 text-green-700 border-green-200';
       case 'out_for_delivery': return 'bg-blue-100 text-blue-700 border-blue-200';
@@ -134,9 +134,14 @@ export default function AdminOrdersPage() {
               <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
               <h3 className="font-black text-xl font-headline text-foreground">Audit Stream</h3>
             </div>
-            <Badge variant="outline" className="rounded-full px-4 py-1 font-bold bg-white">
-              {filteredOrders.length} ORDERS AUDITED
-            </Badge>
+            <div className="flex items-center gap-4">
+              <Badge variant="outline" className="rounded-full px-4 py-1 font-bold bg-white text-red-600 border-red-100">
+                {orders.filter(o => o.isCancelled).length} CANCELLED
+              </Badge>
+              <Badge variant="outline" className="rounded-full px-4 py-1 font-bold bg-white">
+                {filteredOrders.length} ORDERS AUDITED
+              </Badge>
+            </div>
         </div>
         
         <div className="overflow-x-auto">
@@ -146,7 +151,7 @@ export default function AdminOrdersPage() {
                 <TableHead className="font-black px-10 h-20 uppercase tracking-widest text-[10px]">Order ID</TableHead>
                 <TableHead className="font-black h-20 uppercase tracking-widest text-[10px]">Customer</TableHead>
                 <TableHead className="font-black h-20 uppercase tracking-widest text-[10px]">Amount</TableHead>
-                <TableHead className="font-black h-20 uppercase tracking-widest text-[10px]">Status</TableHead>
+                <TableHead className="font-black h-20 uppercase tracking-widest text-[10px]">Lifecycle</TableHead>
                 <TableHead className="font-black h-20 uppercase tracking-widest text-[10px] text-right pr-10">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -155,10 +160,13 @@ export default function AdminOrdersPage() {
                 const customer = users?.find(u => u.uid === order.userId);
                 const orderId = order.orderId || order.id || '';
                 const totalAmount = order.totalAmount || 0;
-                const statusKey = computeOrderStatus(order.createdAt);
+                const statusKey = order.isCancelled ? 'cancelled' : computeOrderStatus(order.createdAt);
                 
                 return (
-                  <TableRow key={order.id} className="hover:bg-muted/5 transition-colors border-b last:border-none group">
+                  <TableRow key={order.id} className={cn(
+                    "hover:bg-muted/5 transition-colors border-b last:border-none group",
+                    order.isCancelled && "opacity-60 bg-red-50/10"
+                  )}>
                     <TableCell className="px-10 py-6">
                       <div className="flex flex-col">
                         <span className="font-mono text-xs font-black text-muted-foreground">#{orderId.slice(0, 12).toUpperCase()}</span>
@@ -183,9 +191,16 @@ export default function AdminOrdersPage() {
                       <span className="font-black text-lg text-primary">₹{(totalAmount || 0).toLocaleString()}</span>
                     </TableCell>
                     <TableCell>
-                      <Badge className={cn("rounded-full px-4 py-1.5 font-black text-[10px] uppercase tracking-wider border-none", getStatusColor(statusKey))}>
-                        {STATUS_LABELS[statusKey]}
-                      </Badge>
+                      <div className="flex flex-col gap-1 items-start">
+                        <Badge className={cn("rounded-full px-4 py-1.5 font-black text-[10px] uppercase tracking-wider border-none", getStatusColor(statusKey, order.isCancelled))}>
+                          {order.isCancelled ? "Cancelled" : STATUS_LABELS[statusKey]}
+                        </Badge>
+                        {order.isCancelled && (
+                          <span className="text-[8px] font-black text-red-600 uppercase ml-1">
+                            {order.paymentStatus === 'refunded' ? '✓ Refunded' : 'Refund Pending'}
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-right pr-10">
                       <Button 
@@ -211,21 +226,38 @@ export default function AdminOrdersPage() {
 
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
         <DialogContent className="sm:max-w-[600px] rounded-[2.5rem] p-0 overflow-hidden border-none bg-[#FDFCFB]">
-          <DialogHeader className="bg-primary p-10 text-white">
+          <DialogHeader className={cn("p-10 text-white", selectedOrder?.isCancelled ? "bg-red-600" : "bg-primary")}>
             <div className="flex items-center justify-between">
               <div>
-                <DialogTitle className="text-3xl font-headline font-black">Order Audit</DialogTitle>
+                <DialogTitle className="text-3xl font-headline font-black">
+                  {selectedOrder?.isCancelled ? 'Cancelled Order' : 'Order Audit'}
+                </DialogTitle>
                 <DialogDescription className="text-white/70 font-bold mt-1">
                   ID: #{(selectedOrder?.orderId || selectedOrder?.id || '').toUpperCase()}
                 </DialogDescription>
               </div>
               <Badge className="rounded-full px-4 py-1.5 font-black text-[10px] uppercase border-none bg-white text-primary">
-                {STATUS_LABELS[computeOrderStatus(selectedOrder?.createdAt)]}
+                {selectedOrder?.isCancelled ? "CANCELLED" : STATUS_LABELS[computeOrderStatus(selectedOrder?.createdAt)]}
               </Badge>
             </div>
           </DialogHeader>
           
           <div className="p-10 space-y-8">
+            {selectedOrder?.isCancelled && (
+              <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold text-sm text-red-900">Cancellation Metadata</p>
+                  <p className="text-xs text-red-700">
+                    Cancelled on: {selectedOrder.cancelledAt ? format(selectedOrder.cancelledAt.toDate(), 'MMM dd, yyyy • p') : 'Unknown'}
+                  </p>
+                  <p className="text-xs text-red-700 mt-1">
+                    Refund Status: <span className="font-black">{selectedOrder.paymentStatus?.toUpperCase()}</span>
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Customer Details</p>
               <div className="p-4 bg-white rounded-2xl border flex items-center gap-3">
@@ -265,15 +297,17 @@ export default function AdminOrdersPage() {
 
             <div className="flex items-center justify-between pt-6 border-t border-dashed">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-green-500/10 flex items-center justify-center text-green-600">
-                  <CheckCircle2 className="w-6 h-6" />
+                <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center", selectedOrder?.isCancelled ? "bg-red-100 text-red-600" : "bg-green-500/10 text-green-600")}>
+                  {selectedOrder?.isCancelled ? <XCircle className="w-6 h-6" /> : <CheckCircle2 className="w-6 h-6" />}
                 </div>
                 <div>
-                  <p className="font-bold text-foreground">Standardized Total</p>
+                  <p className="font-bold text-foreground">
+                    {selectedOrder?.isCancelled ? 'Loss Recognition' : 'Standardized Total'}
+                  </p>
                   <p className="text-xs text-muted-foreground italic">Validated audit record</p>
                 </div>
               </div>
-              <p className="text-4xl font-headline font-black text-primary">
+              <p className={cn("text-4xl font-headline font-black", selectedOrder?.isCancelled ? "text-red-600" : "text-primary")}>
                 ₹{(selectedOrder?.totalAmount || 0).toLocaleString()}
               </p>
             </div>
