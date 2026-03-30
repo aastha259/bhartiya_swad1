@@ -6,12 +6,13 @@ import { Card } from '@/components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Trash2, Plus, Search, Database, Loader2, Sparkles, Flame, AlertCircle } from 'lucide-react';
+import { Trash2, Plus, Search, Database, Loader2, Sparkles, Flame, AlertCircle, Edit } from 'lucide-react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, limit, doc, deleteDoc, addDoc, writeBatch, getDocs } from 'firebase/firestore';
+import { collection, query, doc, deleteDoc, addDoc, updateDoc, writeBatch, getDocs, serverTimestamp } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
@@ -29,11 +30,15 @@ export default function AdminDatabasePage() {
   const db = useFirestore();
   const [search, setSearch] = useState('');
   const [isAddDishOpen, setIsAddDishOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingDish, setEditingDish] = useState<any>(null);
   const [isSeeding, setIsSeeding] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
+  // Fetch ALL dishes without arbitrary limits for full catalog management
   const dishesQuery = useMemoFirebase(() => {
-    return query(collection(db, 'dishes'), limit(300));
+    return query(collection(db, 'dishes'));
   }, [db]);
   const { data: dishes, isLoading, error } = useCollection(dishesQuery);
 
@@ -47,6 +52,65 @@ export default function AdminDatabasePage() {
       toast.error("Failed to delete dish", { id: deleteToast });
     } finally {
       setIsDeleting(null);
+    }
+  };
+
+  const handleAddDish = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSaving(true);
+    const formData = new FormData(e.currentTarget);
+    const newDish = {
+      name: formData.get('name') as string,
+      price: parseFloat(formData.get('price') as string),
+      category: formData.get('category') as string,
+      description: formData.get('description') as string,
+      image: formData.get('image') as string || `https://picsum.photos/seed/${Date.now()}/800/600`,
+      rating: 4.5,
+      isVeg: formData.get('isVeg') === 'on',
+      createdAt: serverTimestamp(),
+      totalOrders: 0,
+      totalRevenue: 0,
+      restaurantId: ''
+    };
+
+    const addToast = toast.loading("Adding new dish...");
+    try {
+      await addDoc(collection(db, 'dishes'), newDish);
+      setIsAddDishOpen(false);
+      toast.success(`${newDish.name} is now live!`, { id: addToast });
+    } catch (err: any) {
+      toast.error("Failed to add dish.", { id: addToast });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleUpdateDish = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editingDish) return;
+    
+    setIsSaving(true);
+    const formData = new FormData(e.currentTarget);
+    const updatedData = {
+      name: formData.get('name') as string,
+      price: parseFloat(formData.get('price') as string),
+      category: formData.get('category') as string,
+      description: formData.get('description') as string,
+      image: formData.get('image') as string,
+      isVeg: formData.get('isVeg') === 'on',
+      updatedAt: serverTimestamp()
+    };
+
+    const updateToast = toast.loading("Updating records...");
+    try {
+      await updateDoc(doc(db, 'dishes', editingDish.id), updatedData);
+      setIsEditOpen(false);
+      setEditingDish(null);
+      toast.success("Dish records updated", { id: updateToast });
+    } catch (err: any) {
+      toast.error("Update failed", { id: updateToast });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -122,33 +186,6 @@ export default function AdminDatabasePage() {
     }
   };
 
-  const handleAddDish = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const newDish = {
-      name: formData.get('name') as string,
-      price: parseFloat(formData.get('price') as string),
-      category: formData.get('category') as string,
-      description: formData.get('description') as string,
-      image: `https://picsum.photos/seed/${Date.now()}/800/600`,
-      rating: 4.5,
-      isVeg: formData.get('isVeg') === 'on',
-      createdAt: new Date().toISOString(),
-      totalOrders: 0,
-      totalRevenue: 0,
-      restaurantId: ''
-    };
-
-    const addToast = toast.loading("Adding new dish...");
-    try {
-      await addDoc(collection(db, 'dishes'), newDish);
-      setIsAddDishOpen(false);
-      toast.success(`${newDish.name} is now live!`, { id: addToast });
-    } catch (err: any) {
-      toast.error("Failed to add dish.", { id: addToast });
-    }
-  };
-
   return (
     <div className="space-y-12 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -157,7 +194,7 @@ export default function AdminDatabasePage() {
             <Database className="w-10 h-10 text-primary" />
             Mega Repository
           </h1>
-          <p className="text-muted-foreground font-medium">Manage your catalog (Showing first {dishes?.length || 0} items).</p>
+          <p className="text-muted-foreground font-medium">Manage your catalog ({dishes?.length || 0} items found).</p>
         </div>
         <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
           <Button 
@@ -227,14 +264,20 @@ export default function AdminDatabasePage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="description">Description</Label>
-                  <Input id="description" name="description" placeholder="Description..." className="rounded-xl" />
+                  <Textarea id="description" name="description" placeholder="Description..." className="rounded-xl min-h-[100px]" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="image">Image URL</Label>
+                  <Input id="image" name="image" placeholder="https://picsum.photos/..." className="rounded-xl" />
                 </div>
                 <div className="flex items-center gap-2">
                   <input type="checkbox" id="isVeg" name="isVeg" defaultChecked className="w-4 h-4 rounded border-green-600 text-green-600 accent-green-600" />
                   <Label htmlFor="isVeg">Vegetarian</Label>
                 </div>
                 <DialogFooter>
-                  <Button type="submit" className="w-full rounded-xl font-bold bg-primary h-12 shadow-lg active:scale-95">Save Dish</Button>
+                  <Button type="submit" disabled={isSaving} className="w-full rounded-xl font-bold bg-primary h-12 shadow-lg active:scale-95">
+                    {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : "Save Dish"}
+                  </Button>
                 </DialogFooter>
               </form>
             </DialogContent>
@@ -282,17 +325,30 @@ export default function AdminDatabasePage() {
                   </TableCell>
                   <TableCell className="font-black text-primary">₹{dish.price}</TableCell>
                   <TableCell className="text-right pr-6">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="rounded-lg text-muted-foreground hover:text-destructive transition-all active:scale-90" 
-                      onClick={() => {
-                        if(confirm(`Remove ${dish.name}?`)) handleDelete(dish.id);
-                      }}
-                      disabled={isDeleting === dish.id}
-                    >
-                      {isDeleting === dish.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                    </Button>
+                    <div className="flex justify-end gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="rounded-lg text-muted-foreground hover:text-primary transition-all active:scale-90" 
+                        onClick={() => {
+                          setEditingDish(dish);
+                          setIsEditOpen(true);
+                        }}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="rounded-lg text-muted-foreground hover:text-destructive transition-all active:scale-90" 
+                        onClick={() => {
+                          if(confirm(`Remove ${dish.name}?`)) handleDelete(dish.id);
+                        }}
+                        disabled={isDeleting === dish.id}
+                      >
+                        {isDeleting === dish.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -311,6 +367,52 @@ export default function AdminDatabasePage() {
           </Table>
         </div>
       </Card>
+
+      {/* Edit Dish Dialog */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="sm:max-w-[425px] rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="font-headline font-black text-2xl text-primary">Update Dish Info</DialogTitle>
+          </DialogHeader>
+          {editingDish && (
+            <form onSubmit={handleUpdateDish} className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Dish Name</Label>
+                <Input id="edit-name" name="name" defaultValue={editingDish.name} required className="rounded-xl" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-price">Price (₹)</Label>
+                  <Input id="edit-price" name="price" type="number" defaultValue={editingDish.price} required className="rounded-xl" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-category">Category</Label>
+                  <select name="category" defaultValue={editingDish.category} className="w-full h-10 px-3 border rounded-xl bg-white text-sm focus:ring-primary/20" required>
+                    {MENU_CATEGORIES.map(c => <option key={c} value={c}>{c.replace('_', ' ')}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-description">Description</Label>
+                <Textarea id="edit-description" name="description" defaultValue={editingDish.description} className="rounded-xl min-h-[100px]" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-image">Image URL</Label>
+                <Input id="edit-image" name="image" defaultValue={editingDish.image} placeholder="https://picsum.photos/..." className="rounded-xl" />
+              </div>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" id="edit-isVeg" name="isVeg" defaultChecked={editingDish.isVeg} className="w-4 h-4 rounded border-green-600 text-green-600 accent-green-600" />
+                <Label htmlFor="edit-isVeg">Vegetarian</Label>
+              </div>
+              <DialogFooter>
+                <Button type="submit" disabled={isSaving} className="w-full rounded-xl font-bold bg-primary h-12 shadow-lg active:scale-95">
+                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : "Update Records"}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
