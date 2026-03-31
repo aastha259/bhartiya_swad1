@@ -36,20 +36,32 @@ export default function AdminDatabasePage() {
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Fetch ALL dishes without arbitrary limits for full catalog management
+  // Fetch ALL dishes for full catalog management
   const dishesQuery = useMemoFirebase(() => {
     return query(collection(db, 'dishes'));
   }, [db]);
-  const { data: dishes, isLoading, error } = useCollection(dishesQuery);
+  const { data: dishes, isLoading, error } = useCollection(allDishesQuery());
 
-  const handleDelete = async (id: string) => {
+  function allDishesQuery() {
+    return query(collection(db, 'dishes'));
+  }
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!id) return;
+    
+    const confirmDelete = confirm(`Are you sure you want to permanently remove "${name}" from the repository?`);
+    if (!confirmDelete) return;
+
     setIsDeleting(id);
-    const deleteToast = toast.loading("Deleting dish...");
+    const deleteToast = toast.loading(`Deleting ${name}...`);
+    
     try {
+      // Correct collection name from backend.json is 'dishes'
       await deleteDoc(doc(db, 'dishes', id));
-      toast.success("Dish removed successfully", { id: deleteToast });
-    } catch (e: any) {
-      toast.error("Failed to delete dish", { id: deleteToast });
+      toast.success(`${name} removed successfully`, { id: deleteToast });
+    } catch (err: any) {
+      console.error("Delete error:", err);
+      toast.error("Failed to delete item. Please check permissions.", { id: deleteToast });
     } finally {
       setIsDeleting(null);
     }
@@ -330,7 +342,8 @@ export default function AdminDatabasePage() {
                         variant="ghost" 
                         size="icon" 
                         className="rounded-lg text-muted-foreground hover:text-primary transition-all active:scale-90" 
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setEditingDish(dish);
                           setIsEditOpen(true);
                         }}
@@ -341,8 +354,9 @@ export default function AdminDatabasePage() {
                         variant="ghost" 
                         size="icon" 
                         className="rounded-lg text-muted-foreground hover:text-destructive transition-all active:scale-90" 
-                        onClick={() => {
-                          if(confirm(`Remove ${dish.name}?`)) handleDelete(dish.id);
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(dish.id, dish.name);
                         }}
                         disabled={isDeleting === dish.id}
                       >
