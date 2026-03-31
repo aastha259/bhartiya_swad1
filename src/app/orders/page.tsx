@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -67,7 +66,7 @@ export default function MyOrdersPage() {
     }
   }, [user, loading, router, mounted]);
 
-  if (!mounted || loading || !user || !currentTime) {
+  if (!mounted || loading || !currentTime) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FDFCFB]">
         <div className="flex flex-col items-center gap-4">
@@ -77,6 +76,8 @@ export default function MyOrdersPage() {
       </div>
     );
   }
+
+  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-[#FDFCFB]">

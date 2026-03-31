@@ -27,6 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const { user: firebaseUser, isUserLoading } = useUser();
   const auth = useFirebaseAuth();
+  const [internalLoading, setInternalLoading] = useState(true);
 
   // 1. Explicit Persistence Setting
   useEffect(() => {
@@ -39,38 +40,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (typeof window !== 'undefined' && !isUserLoading) {
       const path = window.location.pathname;
-      // Don't track login, signup or home as "last page" for post-login redirect
       if (path !== '/login' && path !== '/signup' && path !== '/') {
         localStorage.setItem('bhartiya_swad_last_page', path);
       }
     }
   }, [isUserLoading]);
 
-  // 3. User State Synchronization
+  // 3. User State Synchronization & Unified Loading
   useEffect(() => {
-    const syncUser = () => {
-      if (!isUserLoading) {
-        if (firebaseUser) {
-          const isEmailAdmin = firebaseUser.email === 'xyz@admin.com';
-          const isAdminSession = typeof window !== 'undefined' && localStorage.getItem('bhartiya_swad_admin') === 'true';
-          const isAdmin = isEmailAdmin || (isAdminSession && firebaseUser.email === 'xyz@admin.com');
+    if (isUserLoading) {
+      setInternalLoading(true);
+      return;
+    }
 
-          setUser({
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-            displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Guest',
-            role: isAdmin ? 'admin' : 'user',
-            isAdmin: isAdmin
-          });
-        } else {
-          setUser(null);
-        }
-      }
-    };
+    if (firebaseUser) {
+      const isEmailAdmin = firebaseUser.email === 'xyz@admin.com';
+      const isAdminSession = typeof window !== 'undefined' && localStorage.getItem('bhartiya_swad_admin') === 'true';
+      const isAdmin = isEmailAdmin || (isAdminSession && firebaseUser.email === 'xyz@admin.com');
 
-    syncUser();
-    window.addEventListener('storage', syncUser);
-    return () => window.removeEventListener('storage', syncUser);
+      setUser({
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Guest',
+        role: isAdmin ? 'admin' : 'user',
+        isAdmin: isAdmin
+      });
+    } else {
+      setUser(null);
+    }
+    
+    // Crucial: Give a small buffer for state to propagate
+    const timer = setTimeout(() => setInternalLoading(false), 100);
+    return () => clearTimeout(timer);
   }, [firebaseUser, isUserLoading]);
 
   // 4. 30-Minute Inactivity Timeout
@@ -94,7 +95,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }, 30 * 60 * 1000); // 30 minutes
     };
 
-    // Track activity
     const activityEvents = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'];
     activityEvents.forEach(event => {
       window.addEventListener(event, resetTimer);
@@ -119,7 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading: isUserLoading, logout }}>
+    <AuthContext.Provider value={{ user, loading: internalLoading, logout }}>
       {children}
     </AuthContext.Provider>
   );

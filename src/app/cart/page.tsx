@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -16,7 +15,8 @@ import {
   Truck,
   ShieldCheck,
   Info,
-  LogOut
+  LogOut,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -47,12 +47,14 @@ export default function CartPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FDFCFB]">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-          <p className="font-headline font-bold text-muted-foreground">Preparing your basket...</p>
+          <Loader2 className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin text-primary" />
+          <p className="font-headline font-bold text-muted-foreground">Synchronizing your basket...</p>
         </div>
       </div>
     );
   }
+
+  if (!user) return null;
 
   const DELIVERY_FEE = items.length > 0 ? 49 : 0;
   const PLATFORM_FEE = items.length > 0 ? 5 : 0;
@@ -60,7 +62,6 @@ export default function CartPage() {
 
   return (
     <div className="min-h-screen bg-[#FDFCFB] pb-20">
-      {/* Header */}
       <nav className="sticky top-0 z-50 w-full bg-white/90 backdrop-blur-xl border-b px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center gap-3">
@@ -92,8 +93,6 @@ export default function CartPage() {
 
       <main className="max-w-7xl mx-auto px-6 py-12">
         <div className="flex flex-col lg:flex-row gap-12">
-          
-          {/* Cart Items List */}
           <div className="flex-1 space-y-8">
             <div className="flex items-center justify-between">
               <h1 className="text-4xl font-headline font-black text-foreground flex items-center gap-4">
@@ -178,7 +177,6 @@ export default function CartPage() {
             )}
           </div>
 
-          {/* Summary Sidebar */}
           {items.length > 0 && (
             <div className="w-full lg:w-[400px]">
               <Card className="sticky top-32 border-none shadow-2xl rounded-[3rem] overflow-hidden bg-white">
@@ -246,7 +244,6 @@ export default function CartPage() {
         </div>
       </main>
 
-      {/* Mobile Sticky CTA */}
       {items.length > 0 && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 p-6 bg-white border-t z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
           <div className="flex items-center justify-between gap-6">

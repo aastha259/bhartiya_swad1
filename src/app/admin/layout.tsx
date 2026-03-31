@@ -1,7 +1,6 @@
-
 "use client"
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { 
@@ -20,7 +19,8 @@ import {
   Menu,
   Sparkles,
   Settings,
-  MessageSquare
+  MessageSquare,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,35 +33,38 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const pathname = usePathname();
   const { user, loading, logout } = useAuth();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (!loading) {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && !loading) {
       // Airtight check: If the user is not authenticated or the email is NOT the authorized admin, kick them out.
       if (!user || !user.isAdmin || user.email !== 'xyz@admin.com') {
-        // Clear potential stale admin session flag
         if (typeof window !== 'undefined') {
           localStorage.removeItem('bhartiya_swad_admin');
         }
-        router.push('/');
+        router.push('/login?callbackUrl=/admin/dashboard');
       }
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, mounted]);
 
   const handleLogout = () => {
     logout();
     router.push('/');
   };
 
-  if (loading) return (
+  if (!mounted || loading) return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="flex flex-col items-center gap-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        <p className="font-bold text-muted-foreground text-sm font-headline">Authenticating Admin...</p>
+        <Loader2 className="animate-spin h-12 w-12 text-primary" />
+        <p className="font-bold text-muted-foreground text-sm font-headline">Verifying Admin Privileges...</p>
       </div>
     </div>
   );
   
-  // Guard against brief race condition render
   if (!user || !user.isAdmin || user.email !== 'xyz@admin.com') return null;
 
   const navItems = [
@@ -79,7 +82,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="flex min-h-screen bg-background selection:bg-primary selection:text-white">
-      {/* Fixed Sidebar */}
       <aside className="w-72 bg-white border-r hidden md:flex flex-col sticky top-0 h-screen shadow-sm z-30">
         <div className="p-8 flex items-center gap-3">
           <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
@@ -126,9 +128,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </aside>
 
-      {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Header Bar */}
         <header className="h-20 bg-white border-b sticky top-0 z-20 px-8 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-6 flex-1">
             <div className="md:hidden">
@@ -170,7 +170,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </header>
 
-        {/* Page Content */}
         <main className="flex-1 p-8 md:p-12 overflow-y-auto">
           <div className="max-w-7xl mx-auto">
             {children}

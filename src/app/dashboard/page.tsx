@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -65,6 +64,17 @@ export default function DashboardPage() {
   const [loadingRecs, setLoadingRecs] = useState(false);
   const [hasAttemptedRecs, setHasAttemptedRecs] = useState(false);
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Protect route
+  useEffect(() => {
+    if (mounted && !loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router, mounted]);
+
   const dishesQuery = useMemoFirebase(() => {
     return query(collection(db, 'dishes'), limit(100));
   }, [db]);
@@ -80,28 +90,15 @@ export default function DashboardPage() {
   }, [db]);
   const { data: topRatedDishes } = useCollection(topRatedQuery);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (mounted && !loading && !user) {
-      router.push('/login');
-    }
-  }, [user, loading, router, mounted]);
-
   // Smart AI Notifications Trigger
   useEffect(() => {
     const triggerSmartNotification = async () => {
       if (!user?.uid || !allDishes || allDishes.length === 0) return;
 
       try {
-        // 1. Check if AI notification was already sent in the last 24 hours
         const lastDay = new Date();
         lastDay.setHours(lastDay.getHours() - 24);
         
-        // Fixed: Simplified query to avoid composite index requirement.
-        // We fetch the most recent notifications for the user and check client-side.
         const q = query(
           collection(db, 'notifications'),
           where('userId', '==', user.uid),
@@ -115,9 +112,8 @@ export default function DashboardPage() {
           return data.type === 'ai' && createdAt >= lastDay;
         });
 
-        if (hasRecentAINotif) return; // Prevent spam
+        if (hasRecentAINotif) return;
 
-        // 2. Fetch history
         const orderRef = collection(db, 'orders');
         const historyQ = query(orderRef, where('userId', '==', user.uid), limit(10));
         const orderSnap = await getDocs(historyQ);
@@ -129,15 +125,13 @@ export default function DashboardPage() {
           });
         });
 
-        if (history.length === 0) return; // Need some history to be smart
+        if (history.length === 0) return;
 
-        // 3. Generate AI message
         const result = await smartNotifications({
           userFoodHistory: history,
           userName: user.displayName || 'Friend'
         });
 
-        // 4. Save to Firestore
         if (result.message) {
           await addDoc(collection(db, 'notifications'), {
             userId: user.uid,
@@ -219,23 +213,26 @@ export default function DashboardPage() {
     }
   };
 
-  // Initial fetch on mount if dishes available
   useEffect(() => {
     if (mounted && allDishes && allDishes.length > 0 && user && !hasAttemptedRecs) {
       getPersonalizedRecommendations();
     }
   }, [user?.uid, allDishes, mounted]);
 
-  if (!mounted || loading || !user) {
+  // Loading state
+  if (!mounted || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FDFCFB]">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin text-primary" />
-          <p className="font-headline font-bold text-muted-foreground">Setting the table...</p>
+          <p className="font-headline font-bold text-muted-foreground">Authenticating session...</p>
         </div>
       </div>
     );
   }
+
+  // Guard
+  if (!user) return null;
 
   const sidebarLinks = [
     { name: 'Dashboard', href: '/dashboard', active: true, icon: Home },
@@ -451,7 +448,7 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          {/* New Impressive AI Recommendations Section */}
+          {/* AI Recommendations Section */}
           <section className="bg-muted/30 p-12 md:p-16 rounded-[4rem] border border-primary/5 relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl opacity-60 animate-float-slow"></div>
             <div className="absolute bottom-0 left-0 w-48 h-48 bg-accent/5 rounded-full blur-3xl opacity-20 animate-drift-slow"></div>
@@ -507,7 +504,7 @@ export default function DashboardPage() {
                       </div>
                       <div className="mt-4 px-2">
                         <p className="text-[9px] font-black text-primary/60 uppercase tracking-widest italic">
-                          Recommended for you because you ordered similar items
+                          Recommended for you based on history
                         </p>
                       </div>
                     </div>
