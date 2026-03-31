@@ -1,9 +1,9 @@
-
 "use client"
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useUser, useAuth as useFirebaseAuth } from '@/firebase';
-import { User as FirebaseUser } from 'firebase/auth';
+import { browserLocalPersistence, setPersistence } from 'firebase/auth';
+import toast from 'react-hot-toast';
 
 type Role = 'user' | 'admin' | null;
 
@@ -28,12 +28,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { user: firebaseUser, isUserLoading } = useUser();
   const auth = useFirebaseAuth();
 
+  // 1. Explicit Persistence Setting
+  useEffect(() => {
+    setPersistence(auth, browserLocalPersistence).catch(err => {
+      console.warn("Persistence could not be set:", err);
+    });
+  }, [auth]);
+
+  // 2. Path Persistence: Store last visited page
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !isUserLoading) {
+      const path = window.location.pathname;
+      // Don't track login, signup or home as "last page" for post-login redirect
+      if (path !== '/login' && path !== '/signup' && path !== '/') {
+        localStorage.setItem('bhartiya_swad_last_page', path);
+      }
+    }
+  }, [isUserLoading]);
+
+  // 3. User State Synchronization
   useEffect(() => {
     const syncUser = () => {
       if (!isUserLoading) {
         if (firebaseUser) {
-          // Strict admin check: Only the authorized email or a valid admin session flag
-          // combined with the specific admin email is considered an administrator.
           const isEmailAdmin = firebaseUser.email === 'xyz@admin.com';
           const isAdminSession = typeof window !== 'undefined' && localStorage.getItem('bhartiya_swad_admin') === 'true';
           const isAdmin = isEmailAdmin || (isAdminSession && firebaseUser.email === 'xyz@admin.com');
@@ -52,15 +69,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     syncUser();
-    
-    // Watch for localStorage changes across tabs
     window.addEventListener('storage', syncUser);
     return () => window.removeEventListener('storage', syncUser);
   }, [firebaseUser, isUserLoading]);
 
+  // 4. 30-Minute Inactivity Timeout
+  useEffect(() => {
+    if (!firebaseUser) return;
+
+    let timeout: NodeJS.Timeout;
+
+    const resetTimer = () => {
+      if (timeout) clearTimeout(timeout);
+      
+      timeout = setTimeout(() => {
+        auth.signOut();
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('bhartiya_swad_admin');
+        }
+        toast("Session expired due to inactivity. Please login again.", {
+          icon: '⏳',
+          duration: 5000
+        });
+      }, 30 * 60 * 1000); // 30 minutes
+    };
+
+    // Track activity
+    const activityEvents = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'];
+    activityEvents.forEach(event => {
+      window.addEventListener(event, resetTimer);
+    });
+
+    resetTimer();
+
+    return () => {
+      if (timeout) clearTimeout(timeout);
+      activityEvents.forEach(event => {
+        window.removeEventListener(event, resetTimer);
+      });
+    };
+  }, [firebaseUser, auth]);
+
   const logout = () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('bhartiya_swad_admin');
+      localStorage.removeItem('bhartiya_swad_last_page');
     }
     auth.signOut();
   };

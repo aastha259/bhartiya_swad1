@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect, Suspense } from 'react';
@@ -31,7 +30,7 @@ function LoginForm() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+  const callbackUrl = searchParams.get('callbackUrl');
 
   const handleLogin = async (role: 'user' | 'admin') => {
     if (!email || !email.trim()) {
@@ -120,7 +119,11 @@ function LoginForm() {
         }
 
         toast.success("Welcome back!", { id: loginToast });
-        router.push(callbackUrl);
+        
+        // Redirection Logic: callbackUrl > stored lastPage > /dashboard
+        const lastPage = localStorage.getItem('bhartiya_swad_last_page');
+        const redirectPath = callbackUrl || lastPage || '/dashboard';
+        router.push(redirectPath);
       }
     } catch (error: any) {
       console.error("Auth Error:", error);
