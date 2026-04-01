@@ -11,12 +11,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'react-hot-toast';
 import { Loader2, Lock, ShieldCheck, AlertCircle } from 'lucide-react';
 
 export default function ChangePasswordForm() {
   const auth = useFirebaseAuth();
-  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     currentPassword: '',
@@ -34,84 +33,69 @@ export default function ChangePasswordForm() {
     
     // 1. Basic Validation
     if (!formData.currentPassword || !formData.newPassword) {
-      toast({
-        variant: "destructive",
-        title: "Missing Fields",
-        description: "Please fill in all password fields."
-      });
+      toast.error("Please fill in all password fields.");
       return;
     }
 
     if (formData.newPassword !== formData.confirmPassword) {
-      toast({
-        variant: "destructive",
-        title: "Passwords mismatch",
-        description: "The new password and confirmation do not match."
-      });
+      toast.error("The new password and confirmation do not match.");
       return;
     }
 
     if (formData.newPassword.length < 6) {
-      toast({
-        variant: "destructive",
-        title: "Weak Password",
-        description: "Your new password must be at least 6 characters long."
-      });
+      toast.error("Your new password must be at least 6 characters long.");
       return;
     }
 
     const user = auth.currentUser;
     if (!user || !user.email) {
-      toast({
-        variant: "destructive",
-        title: "Not Authenticated",
-        description: "You must be logged in to perform this action."
-      });
+      toast.error("User session expired. Please login again.");
       return;
     }
 
     setLoading(true);
+    const updateToast = toast.loading("Verifying and updating credentials...");
+
     try {
-      // 🔐 Step 1: Re-authenticate the user with their current password
-      // This is a mandatory Firebase security requirement for sensitive operations
+      // 🔐 Step 1: Create credential using current password
       const credential = EmailAuthProvider.credential(user.email, formData.currentPassword);
+      
+      // 🔐 Step 2: Re-authenticate the user (MANDATORY for password update)
       await reauthenticateWithCredential(user, credential);
       
-      // 🔐 Step 2: Update to the new password in Firebase Auth
+      // 🔐 Step 3: Update to the new password in Firebase Auth (STRICTLY Auth, no Firestore)
       await updatePassword(user, formData.newPassword);
 
-      toast({
-        title: "Security Updated",
-        description: "Your password has been changed successfully."
-      });
+      toast.success("Security Updated Successfully!", { id: updateToast });
 
-      // Reset form on success
+      // Reset form
       setFormData({
         currentPassword: '',
         newPassword: '',
         confirmPassword: ''
       });
+
+      // 🔄 Step 4: Refresh session
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+
     } catch (error: any) {
       console.error("Password Update Error:", error);
       
-      let message = "We encountered an error updating your password.";
+      let message = "Password update failed. Please try again.";
       
-      // Handle specific Firebase Auth error codes for better UX
       if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        message = "The current password you entered is incorrect.";
+        message = "Incorrect current password. Verification failed.";
       } else if (error.code === 'auth/requires-recent-login') {
         message = "For security, please log out and log back in before changing your password.";
       } else if (error.code === 'auth/weak-password') {
         message = "The new password is too weak. Try adding symbols or numbers.";
-      } else if (error.code === 'auth/user-token-expired') {
-        message = "Your session has expired. Please log in again.";
+      } else if (error.code === 'auth/too-many-requests') {
+        message = "Too many failed attempts. Try again in a few minutes.";
       }
 
-      toast({
-        variant: "destructive",
-        title: "Update Failed",
-        description: message
-      });
+      toast.error(message, { id: updateToast });
     } finally {
       setLoading(false);
     }
@@ -128,7 +112,6 @@ export default function ChangePasswordForm() {
       <CardContent className="p-8">
         <form onSubmit={handleUpdatePassword} className="space-y-6">
           <div className="space-y-4">
-            {/* Current Password Field */}
             <div className="space-y-2">
               <Label htmlFor="currentPassword" className="font-black text-[10px] uppercase tracking-widest text-muted-foreground ml-1">Current Password</Label>
               <div className="relative">
@@ -147,7 +130,6 @@ export default function ChangePasswordForm() {
               </div>
             </div>
 
-            {/* New Password Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="newPassword" className="font-black text-[10px] uppercase tracking-widest text-muted-foreground ml-1">New Password</Label>
@@ -205,7 +187,7 @@ export default function ChangePasswordForm() {
         <div className="flex items-start gap-3">
           <AlertCircle className="w-4 h-4 text-muted-foreground mt-0.5" />
           <p className="text-[10px] text-muted-foreground font-bold italic leading-relaxed">
-            Note: Changing your password will require re-authentication. For security, never share your administrative credentials with unauthorized personnel.
+            Note: For your security, this action requires re-authentication. Your session will be refreshed upon successful update.
           </p>
         </div>
       </CardFooter>
