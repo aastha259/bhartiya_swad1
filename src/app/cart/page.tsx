@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -25,6 +26,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { useCart } from '@/lib/contexts/cart-context';
+import UserNav from '@/components/UserNav';
 import { cn } from '@/lib/utils';
 
 export default function CartPage() {
@@ -72,21 +74,11 @@ export default function CartPage() {
           </Link>
           <div className="flex items-center gap-4">
              <Link href="/menu">
-              <Button variant="ghost" className="font-bold gap-2 rounded-xl">
+              <Button variant="ghost" className="font-bold gap-2 rounded-xl text-muted-foreground hover:text-primary">
                 <ArrowLeft className="w-4 h-4" /> Back to Menu
               </Button>
             </Link>
-            {user && (
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => logout()} 
-                className="text-muted-foreground hover:text-destructive"
-                title="Logout"
-              >
-                <LogOut className="w-5 h-5" />
-              </Button>
-            )}
+            <UserNav />
           </div>
         </div>
       </nav>
@@ -98,7 +90,7 @@ export default function CartPage() {
               <h1 className="text-4xl font-headline font-black text-foreground flex items-center gap-4">
                 <ShoppingCart className="w-10 h-10 text-primary" />
                 Your Basket
-                <Badge className="bg-primary/10 text-primary border-none rounded-full px-4 ml-2">
+                <Badge className="bg-primary/10 text-primary border-none rounded-full px-4 ml-2 text-white">
                   {totalQuantity} {totalQuantity === 1 ? 'item' : 'items'}
                 </Badge>
               </h1>
@@ -113,7 +105,7 @@ export default function CartPage() {
                   <h2 className="text-2xl font-headline font-black">Your basket is empty</h2>
                   <p className="text-muted-foreground font-medium">Looks like you haven't added anything to your cart yet. Explore our delicious menu to get started!</p>
                   <Link href="/menu">
-                    <Button className="h-14 px-10 rounded-2xl bg-primary text-lg font-black shadow-xl shadow-primary/20">
+                    <Button className="h-14 px-10 rounded-2xl bg-primary text-lg font-black shadow-xl shadow-primary/20 text-white">
                       Browse Menu
                     </Button>
                   </Link>
@@ -224,8 +216,8 @@ export default function CartPage() {
                       </div>
                     </div>
 
-                    <Link href="/checkout">
-                      <Button className="w-full h-16 rounded-[2rem] bg-primary text-xl font-black shadow-xl shadow-primary/20 group overflow-hidden relative">
+                    <Link href="/checkout" className="block w-full">
+                      <Button className="w-full h-16 rounded-[2rem] bg-primary text-xl font-black shadow-xl shadow-primary/20 group overflow-hidden relative text-white">
                         <span className="relative z-10 flex items-center justify-center gap-2">
                           Checkout <ChevronRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                         </span>
@@ -252,7 +244,7 @@ export default function CartPage() {
               <span className="text-2xl font-headline font-black text-primary">₹{grandTotal}</span>
             </div>
             <Link href="/checkout" className="flex-1">
-              <Button className="w-full h-14 rounded-2xl bg-primary font-black text-lg">
+              <Button className="w-full h-14 rounded-2xl bg-primary font-black text-lg text-white">
                 Checkout
               </Button>
             </Link>

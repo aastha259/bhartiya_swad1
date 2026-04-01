@@ -43,6 +43,7 @@ import { useAuth } from '@/lib/contexts/auth-context';
 import { useCart } from '@/lib/contexts/cart-context';
 import FoodCard from '@/components/FoodCard';
 import NotificationBell from '@/components/NotificationBell';
+import UserNav from '@/components/UserNav';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, limit } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
@@ -156,12 +157,6 @@ export default function MenuPage() {
           </div>
 
           <div className="flex items-center gap-4">
-            {user && (
-              <Link href="/dashboard" className="hidden sm:flex items-center gap-2 text-sm font-bold text-muted-foreground hover:text-primary transition-colors px-3 py-2 rounded-xl hover:bg-primary/5">
-                <LayoutDashboard className="w-5 h-5" />
-              </Link>
-            )}
-            
             <NotificationBell />
 
             <Sheet>
@@ -252,20 +247,10 @@ export default function MenuPage() {
             </Sheet>
 
             {user ? (
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => {
-                  logout();
-                  toast.success("Logged out successfully");
-                }} 
-                className="rounded-full hover:bg-destructive/5 hover:text-destructive transition-colors"
-              >
-                <LogOut className="w-5 h-5" />
-              </Button>
+              <UserNav />
             ) : (
               <Link href="/login?callbackUrl=/menu">
-                <Button className="rounded-full px-6 font-bold bg-primary hover:bg-primary/90 transition-all active:scale-95">Login</Button>
+                <Button className="rounded-full px-6 font-bold bg-primary hover:bg-primary/90 transition-all active:scale-95 text-white">Login</Button>
               </Link>
             )}
           </div>
@@ -412,7 +397,7 @@ export default function MenuPage() {
               <p className="text-lg text-muted-foreground font-medium">It looks like the repository hasn't been synced yet. Visit the Admin Portal to bootstrap the menu with 500+ authentic items.</p>
             </div>
             <Link href="/admin/database">
-              <Button className="h-16 px-12 rounded-3xl font-black bg-primary text-xl shadow-2xl shadow-primary/20 hover:scale-105 transition-all">
+              <Button className="h-16 px-12 rounded-3xl font-black bg-primary text-xl shadow-2xl shadow-primary/20 hover:scale-105 transition-all text-white">
                 Go to Admin Repository <ChevronRight className="ml-2 w-6 h-6" />
               </Button>
             </Link>

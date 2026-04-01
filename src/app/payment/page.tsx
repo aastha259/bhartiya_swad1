@@ -22,6 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { useCart } from '@/lib/contexts/cart-context';
+import UserNav from '@/components/UserNav';
 import { useFirestore } from '@/firebase';
 import { collection, doc, setDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -150,7 +151,7 @@ function PaymentContent() {
           </div>
           <div className="pt-8 flex flex-col gap-4">
             <Link href="/dashboard">
-              <Button className="w-full h-14 rounded-2xl bg-primary text-lg font-black shadow-xl shadow-primary/20 hover:scale-105 transition-transform">
+              <Button className="w-full h-14 rounded-2xl bg-primary text-lg font-black shadow-xl shadow-primary/20 hover:scale-105 transition-transform text-white">
                 Go to Dashboard
               </Button>
             </Link>
@@ -183,21 +184,11 @@ function PaymentContent() {
           </Link>
           <div className="flex items-center gap-4">
             <Link href="/checkout">
-              <Button variant="ghost" className="font-bold gap-2 rounded-xl transition-all">
+              <Button variant="ghost" className="font-bold gap-2 rounded-xl transition-all text-muted-foreground hover:text-primary">
                 <ArrowLeft className="w-4 h-4" /> Back to Checkout
               </Button>
             </Link>
-            {user && (
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => logout()} 
-                className="text-muted-foreground hover:text-destructive transition-colors"
-                title="Logout"
-              >
-                <LogOut className="w-5 h-5" />
-              </Button>
-            )}
+            <UserNav />
           </div>
         </div>
       </nav>
@@ -275,10 +266,10 @@ function PaymentContent() {
                   >
                     {isProcessing ? (
                       <div className="flex items-center gap-2">
-                        <Loader2 className="w-6 h-6 animate-spin" /> Verifying Bank Gateway...
+                        <Loader2 className="w-6 h-6 animate-spin text-white" /> <span>Verifying Bank Gateway...</span>
                       </div>
                     ) : (
-                      <span className="flex items-center gap-2">
+                      <span className="flex items-center gap-2 text-white">
                         <Lock className="w-5 h-5" /> Pay Now
                       </span>
                     )}

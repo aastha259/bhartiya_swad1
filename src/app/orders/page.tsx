@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -19,6 +20,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import NotificationBell from '@/components/NotificationBell';
+import UserNav from '@/components/UserNav';
 import { collection, query, where } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { cn, computeOrderStatus, STATUS_LABELS } from '@/lib/utils';
@@ -97,9 +99,7 @@ export default function MyOrdersPage() {
                 <ArrowLeft className="w-4 h-4" /> Dashboard
               </Button>
             </Link>
-            <Button variant="ghost" size="icon" onClick={() => logout()} className="text-muted-foreground hover:text-destructive">
-              <LogOut className="w-5 h-5" />
-            </Button>
+            <UserNav />
           </div>
         </div>
       </nav>

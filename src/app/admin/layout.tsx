@@ -27,6 +27,7 @@ import { useAuth } from '@/lib/contexts/auth-context';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import AdminNotificationBell from '@/components/AdminNotificationBell';
+import UserNav from '@/components/UserNav';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -86,7 +87,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <ChefHat className="text-white w-6 h-6" />
           </div>
           <div className="flex flex-col">
-            <span className="font-headline text-lg font-black leading-tight">Bhartiya Swad</span>
+            <span className="font-headline text-lg font-black leading-tight text-foreground">Bhartiya Swad</span>
             <span className="text-[10px] uppercase tracking-widest font-bold text-accent">Admin Hub</span>
           </div>
         </div>
@@ -140,23 +141,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <AdminNotificationBell />
             
             <div className="flex items-center gap-3 pl-6 border-l ml-4">
-              <div className="text-right hidden sm:block">
-                <p className="text-sm font-black text-foreground">{user?.displayName || 'Administrator'}</p>
-                <p className="text-[10px] text-accent font-black uppercase tracking-widest">System Admin</p>
-              </div>
-              <Avatar className="h-10 w-10 border-2 border-primary/20 shadow-sm">
-                <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.uid}`} />
-                <AvatarFallback><UserIcon /></AvatarFallback>
-              </Avatar>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={handleLogout}
-                className="text-muted-foreground hover:text-destructive ml-2"
-                title="Sign Out"
-              >
-                <LogOut className="w-5 h-5" />
-              </Button>
+              <UserNav />
             </div>
           </div>
         </header>

@@ -30,6 +30,7 @@ import { useFirestore, useDoc, useMemoFirebase } from "@/firebase"
 import { doc, updateDoc, serverTimestamp } from "firebase/firestore"
 import { useAuth } from "@/lib/contexts/auth-context"
 import NotificationBell from "@/components/NotificationBell"
+import UserNav from "@/components/UserNav"
 import { cn, computeOrderStatus, STATUS_LABELS } from "@/lib/utils"
 import { normalizeOrder } from "@/lib/normalizeOrder"
 import { errorEmitter } from "@/firebase/error-emitter"
@@ -194,7 +195,7 @@ export default function OrderTrackingPage() {
         <h1 className="text-3xl font-headline font-black mb-2">Order Not Found</h1>
         <p className="text-muted-foreground mb-8">We couldn't locate the details for this order reference.</p>
         <Link href="/dashboard">
-          <Button className="rounded-2xl h-12 px-8 font-bold bg-primary">
+          <Button className="rounded-2xl h-12 px-8 font-bold bg-primary text-white">
             Return to Dashboard
           </Button>
         </Link>
@@ -232,10 +233,11 @@ export default function OrderTrackingPage() {
           <div className="flex items-center gap-4">
             <NotificationBell />
             <Link href="/dashboard">
-              <Button variant="ghost" className="font-bold gap-2 rounded-xl">
+              <Button variant="ghost" className="font-bold gap-2 rounded-xl text-muted-foreground hover:text-primary">
                 <ArrowLeft className="w-4 h-4" /> Dashboard
               </Button>
             </Link>
+            <UserNav />
           </div>
         </div>
       </nav>
@@ -253,7 +255,7 @@ export default function OrderTrackingPage() {
               <Button 
                 variant="destructive" 
                 onClick={handleCancel}
-                className="rounded-full px-6 font-black h-10 shadow-lg shadow-destructive/20 gap-2 active:scale-95 transition-all"
+                className="rounded-full px-6 font-black h-10 shadow-lg shadow-destructive/20 gap-2 active:scale-95 transition-all text-white"
               >
                 <XCircle className="w-4 h-4" /> Cancel Order
               </Button>

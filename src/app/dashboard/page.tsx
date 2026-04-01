@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -50,6 +51,7 @@ import { collection, query, orderBy, limit, where, getDocs, addDoc, serverTimest
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import toast from 'react-hot-toast';
+import UserNav from '@/components/UserNav';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -339,22 +341,7 @@ export default function DashboardPage() {
             </Sheet>
 
             <div className="flex items-center gap-3 pl-4 border-l">
-               <Avatar className="h-10 w-10 border-2 border-primary/10 shadow-sm ring-2 ring-white transition-transform hover:scale-110">
-                <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`} />
-                <AvatarFallback><UserIcon /></AvatarFallback>
-              </Avatar>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => {
-                  logout();
-                  toast.success("See you soon!");
-                }} 
-                className="text-muted-foreground hover:text-destructive transition-colors"
-                title="Logout"
-              >
-                <LogOut className="w-5 h-5" />
-              </Button>
+              <UserNav />
             </div>
           </div>
         </div>

@@ -28,6 +28,7 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { useCart } from '@/lib/contexts/cart-context';
+import UserNav from '@/components/UserNav';
 import { useFirestore } from '@/firebase';
 import { collection, doc, setDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import toast from 'react-hot-toast';
@@ -172,7 +173,7 @@ export default function CheckoutPage() {
           </div>
           <div className="pt-8 flex flex-col gap-4">
             <Link href="/dashboard">
-              <Button className="w-full h-14 rounded-2xl bg-primary text-lg font-black shadow-xl shadow-primary/20 hover:scale-105 transition-transform">
+              <Button className="w-full h-14 rounded-2xl bg-primary text-lg font-black shadow-xl shadow-primary/20 hover:scale-105 transition-transform text-white">
                 Track My Order
               </Button>
             </Link>
@@ -204,25 +205,15 @@ export default function CheckoutPage() {
             <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110">
               <ChefHat className="text-white w-6 h-6" />
             </div>
-            <span className="font-headline text-2xl font-black tracking-tight hidden md:block text-foreground text-glow-primary">Bhartiya Swad</span>
+            <span className="font-headline text-2xl font-black tracking-tight hidden md:block text-foreground">Bhartiya Swad</span>
           </Link>
           <div className="flex items-center gap-4">
             <Link href="/cart">
-              <Button variant="ghost" className="font-bold gap-2 rounded-xl hover:bg-primary/10 transition-all">
+              <Button variant="ghost" className="font-bold gap-2 rounded-xl hover:bg-primary/10 transition-all text-muted-foreground hover:text-primary">
                 <ArrowLeft className="w-4 h-4" /> Back to Cart
               </Button>
             </Link>
-            {user && (
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => logout()} 
-                className="text-muted-foreground hover:text-destructive transition-colors"
-                title="Logout"
-              >
-                <LogOut className="w-5 h-5" />
-              </Button>
-            )}
+            <UserNav />
           </div>
         </div>
       </nav>
@@ -384,7 +375,7 @@ export default function CheckoutPage() {
                 <Button 
                   onClick={handlePlaceOrder}
                   disabled={isProcessing || !deliveryDetails.address || !deliveryDetails.phone}
-                  className="w-full h-16 rounded-[2rem] bg-primary hover:bg-primary/90 text-white text-xl font-black shadow-xl shadow-primary/20 group relative overflow-hidden transition-all active:scale-95"
+                  className="w-full h-16 rounded-[2rem] bg-primary hover:bg-primary/90 text-white text-xl font-black shadow-xl shadow-primary/20 group relative overflow-hidden transition-all active:scale-95 text-white"
                 >
                   {isProcessing ? (
                     <div className="flex items-center gap-2">
