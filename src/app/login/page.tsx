@@ -73,35 +73,30 @@ function LoginForm() {
     
     try {
       if (role === 'admin') {
-        if (email === 'xyz@admin.com' && password === 'admin@123') {
+        // Updated Admin Password Check
+        if (email === 'xyz@admin.com' && password === 'admin@*123') {
           let userCredential;
           try {
-            // Attempt standard sign in
             userCredential = await signInWithEmailAndPassword(auth, email, password);
           } catch (err: any) {
-            // If sign in fails, check if we need to bootstrap the account
-            // auth/invalid-credential is the common error for both wrong pwd and missing user in newer Firebase SDKs
+            // New logic: Only attempt bootstrap creation if user is truly missing
             if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
               try {
-                // Account might not exist, attempt creation
                 userCredential = await createUserWithEmailAndPassword(auth, email, password);
               } catch (createErr: any) {
-                // If creation fails with email-already-in-use, then the original sign-in failed due to wrong password
                 if (createErr.code === 'auth/email-already-in-use') {
-                  toast.error("Incorrect password for administrator.", { id: loginToastId });
+                  // User exists, so the original error was actually wrong password
+                  toast.error("Invalid credentials for system administrator.", { id: loginToastId });
                   setLoading(false);
                   return;
                 }
-                // Otherwise it's a real creation error
                 throw createErr;
               }
             } else {
-              // It's a different error (network, etc)
               throw err;
             }
           }
 
-          // At this point we have a userCredential
           if (typeof window !== 'undefined') localStorage.setItem('bhartiya_swad_admin', 'true');
 
           await setDoc(doc(db, 'admin_roles', userCredential.user.uid), {
@@ -155,26 +150,23 @@ function LoginForm() {
         router.push(callbackUrl || lastPage || '/dashboard');
       }
     } catch (error: any) {
-      // Silence common auth errors from console to prevent Next.js Dev Overlay recursion
-      const isExpectedAuthError = [
+      // Silence common auth errors from console to prevent Dev Overlay loops
+      const isExpectedError = [
         'auth/invalid-credential',
         'auth/user-not-found',
         'auth/wrong-password',
-        'auth/too-many-requests',
-        'auth/network-request-failed'
+        'auth/too-many-requests'
       ].includes(error?.code);
 
-      if (!isExpectedAuthError) {
-        console.error("Critical Authentication Failure:", error);
+      if (!isExpectedError) {
+        console.error("Login Failure:", error);
       }
 
-      let message = "An unexpected error occurred during login.";
+      let message = "An error occurred during sign in.";
       if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-        message = "Invalid email or password. Please try again.";
+        message = "Invalid email or password.";
       } else if (error.code === 'auth/too-many-requests') {
-        message = "Too many failed attempts. Your account is temporarily locked.";
-      } else if (error.code === 'auth/network-request-failed') {
-        message = "Connection error. Please check your internet.";
+        message = "Too many failed attempts. Try again later.";
       }
       
       toast.error(message, { id: loginToastId });
