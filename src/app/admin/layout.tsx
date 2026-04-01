@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useEffect, useState } from 'react';
@@ -40,7 +41,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     if (mounted && !loading) {
       // Airtight check: If the user is not authenticated or the email is NOT the authorized admin, kick them out.
-      if (!user || !user.isAdmin || user.email !== 'xyz@admin.com') {
+      if (!user || !user.isAdmin || user.email !== 'pqr@admin.com') {
         if (typeof window !== 'undefined') {
           localStorage.removeItem('bhartiya_swad_admin');
         }
@@ -62,7 +63,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     </div>
   );
   
-  if (!user || !user.isAdmin || user.email !== 'xyz@admin.com') return null;
+  if (!user || !user.isAdmin || user.email !== 'pqr@admin.com') return null;
 
   const navItems = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },

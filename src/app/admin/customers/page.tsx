@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useMemo } from 'react';
@@ -23,7 +24,7 @@ export default function AdminCustomersPage() {
   const db = useFirestore();
   const { user } = useAuth();
 
-  const isAuthorized = user?.isAdmin && user.email === 'xyz@admin.com';
+  const isAuthorized = user?.isAdmin && user.email === 'pqr@admin.com';
 
   const usersQuery = useMemoFirebase(() => {
     if (!isAuthorized) return null;

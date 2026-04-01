@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useEffect, Suspense } from 'react';
@@ -35,7 +36,7 @@ function LoginForm() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        if (user.email === 'xyz@admin.com') {
+        if (user.email === 'pqr@admin.com') {
           router.push('/admin/dashboard');
         } else {
           const lastPage = localStorage.getItem('bhartiya_swad_last_page');
@@ -74,7 +75,7 @@ function LoginForm() {
     try {
       if (role === 'admin') {
         // System Administrator Hardcoded Credential Handshake
-        if (email === 'xyz@admin.com' && password === 'admin@*123') {
+        if (email === 'pqr@admin.com' && password === 'aastha123') {
           let userCredential;
           try {
             userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -85,7 +86,8 @@ function LoginForm() {
                 userCredential = await createUserWithEmailAndPassword(auth, email, password);
               } catch (createErr: any) {
                 if (createErr.code === 'auth/email-already-in-use') {
-                  toast.error("System account conflict. Please verify credentials.", { id: loginToastId });
+                  // If account exists but sign-in failed, original error was correct
+                  toast.error("Account exists but credentials failed. Check your password.", { id: loginToastId });
                   setLoading(false);
                   return;
                 }
@@ -149,18 +151,6 @@ function LoginForm() {
         router.push(callbackUrl || lastPage || '/dashboard');
       }
     } catch (error: any) {
-      // Silence common auth errors from console to prevent recursive Dev Overlay loops in dev environment
-      const isExpectedError = [
-        'auth/invalid-credential',
-        'auth/user-not-found',
-        'auth/wrong-password',
-        'auth/too-many-requests'
-      ].includes(error?.code);
-
-      if (!isExpectedError) {
-        console.warn("Auth check:", error.code || "Handshake logic in progress");
-      }
-
       let message = "An error occurred during sign in.";
       if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
         message = "Invalid email or password.";

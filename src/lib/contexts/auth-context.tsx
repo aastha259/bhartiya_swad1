@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
@@ -54,9 +55,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (firebaseUser) {
-      const isEmailAdmin = firebaseUser.email === 'xyz@admin.com';
+      const isEmailAdmin = firebaseUser.email === 'pqr@admin.com';
       const isAdminSession = typeof window !== 'undefined' && localStorage.getItem('bhartiya_swad_admin') === 'true';
-      const isAdmin = isEmailAdmin || (isAdminSession && firebaseUser.email === 'xyz@admin.com');
+      const isAdmin = isEmailAdmin || (isAdminSession && firebaseUser.email === 'pqr@admin.com');
 
       setUser({
         uid: firebaseUser.uid,

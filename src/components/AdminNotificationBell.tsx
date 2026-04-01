@@ -32,7 +32,7 @@ export default function AdminNotificationBell() {
   const lastProcessedId = useRef<string | null>(null);
   const isFirstLoad = useRef(true);
 
-  const isAuthorized = user?.isAdmin && user.email === 'xyz@admin.com';
+  const isAuthorized = user?.isAdmin && user.email === 'pqr@admin.com';
 
   const notificationsQuery = useMemoFirebase(() => {
     if (!isAuthorized) return null;

@@ -32,7 +32,7 @@ export default function AdminNotificationsPage() {
   const { user } = useAuth();
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
 
-  const isAuthorized = user?.isAdmin && user.email === 'xyz@admin.com';
+  const isAuthorized = user?.isAdmin && user.email === 'pqr@admin.com';
 
   const notificationsQuery = useMemoFirebase(() => {
     if (!isAuthorized) return null;

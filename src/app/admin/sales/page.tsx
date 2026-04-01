@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useMemo } from 'react';
@@ -26,7 +27,7 @@ export default function AdminSalesPage() {
   const db = useFirestore();
   const { user } = useAuth();
 
-  const isAuthorized = user?.isAdmin && user.email === 'xyz@admin.com';
+  const isAuthorized = user?.isAdmin && user.email === 'pqr@admin.com';
 
   // Fetch orders from last 30 days for primary intelligence view
   const ordersQuery = useMemoFirebase(() => {
@@ -135,10 +136,7 @@ export default function AdminSalesPage() {
   return (
     <div className="space-y-12 animate-in fade-in duration-700">
       <div>
-        <h1 className="text-4xl font-headline font-black mb-2 flex items-center gap-3">
-          <BarChart3 className="w-10 h-10 text-primary" />
-          Sales Intelligence
-        </h1>
+        <h1>Sales Intelligence</h1>
         <p className="text-muted-foreground font-medium">Real-time revenue stream analysis (Last 30 Days).</p>
       </div>
 

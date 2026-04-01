@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useMemo } from 'react';
@@ -55,7 +56,7 @@ export default function AdminRestaurantsPage() {
   const [editingRestaurant, setEditingRestaurant] = useState<any>(null);
   const [viewingMenu, setViewingMenu] = useState<any>(null);
 
-  const isAuthorized = user?.isAdmin && user.email === 'xyz@admin.com';
+  const isAuthorized = user?.isAdmin && user.email === 'pqr@admin.com';
 
   const restaurantsQuery = useMemoFirebase(() => {
     if (!isAuthorized) return null;

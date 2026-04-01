@@ -47,7 +47,7 @@ export default function AdminDashboardPage() {
     return () => clearInterval(interval);
   }, []);
 
-  const isAuthorized = user?.isAdmin && user.email === 'xyz@admin.com';
+  const isAuthorized = user?.isAdmin && user.email === 'pqr@admin.com';
 
   const ordersQuery = useMemoFirebase(() => {
     if (!isAuthorized || !currentTime) return null;

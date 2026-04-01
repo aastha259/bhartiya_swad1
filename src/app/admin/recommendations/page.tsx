@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState } from 'react';
@@ -20,7 +21,7 @@ export default function AdminRecommendationsPage() {
   const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({});
 
   // Strict authorized email guard
-  const isAuthorized = currentUser?.isAdmin && currentUser.email === 'xyz@admin.com';
+  const isAuthorized = currentUser?.isAdmin && currentUser.email === 'pqr@admin.com';
 
   const usersQuery = useMemoFirebase(() => {
     if (!isAuthorized) return null;

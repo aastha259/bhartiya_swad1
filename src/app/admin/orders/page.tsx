@@ -47,7 +47,7 @@ export default function AdminOrdersPage() {
     return () => clearInterval(interval);
   }, []);
 
-  const isAuthorized = user?.isAdmin && user.email === 'xyz@admin.com';
+  const isAuthorized = user?.isAdmin && user.email === 'pqr@admin.com';
 
   const ordersRef = useMemoFirebase(() => {
     if (!isAuthorized) return null;
