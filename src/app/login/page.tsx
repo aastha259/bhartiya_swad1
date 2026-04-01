@@ -79,13 +79,12 @@ function LoginForm() {
           try {
             userCredential = await signInWithEmailAndPassword(auth, email, password);
           } catch (err: any) {
-            // New logic: Only attempt bootstrap creation if user is truly missing
+            // Only attempt bootstrap creation if user is definitely missing
             if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
               try {
                 userCredential = await createUserWithEmailAndPassword(auth, email, password);
               } catch (createErr: any) {
                 if (createErr.code === 'auth/email-already-in-use') {
-                  // User exists, so the original error was actually wrong password
                   toast.error("Invalid credentials for system administrator.", { id: loginToastId });
                   setLoading(false);
                   return;
@@ -159,7 +158,7 @@ function LoginForm() {
       ].includes(error?.code);
 
       if (!isExpectedError) {
-        console.error("Login Failure:", error);
+        console.warn("Auth status:", error.code || "unknown");
       }
 
       let message = "An error occurred during sign in.";
