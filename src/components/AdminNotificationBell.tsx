@@ -135,18 +135,7 @@ export default function AdminNotificationBell() {
       </SheetTrigger>
       <SheetContent className="w-full sm:max-w-[400px] p-0 border-l shadow-2xl flex flex-col rounded-l-[2.5rem]">
         <div className="bg-primary p-8 text-white relative">
-          <SheetClose asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-6 left-6 w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 text-white shadow-sm border border-white/10 transition-transform active:scale-90"
-              aria-label="Close notifications"
-            >
-              <X className="w-5 h-5" />
-            </Button>
-          </SheetClose>
-
-          <div className="pl-12 flex flex-col gap-1">
+          <div className="flex flex-col gap-1">
             <SheetHeader className="text-left space-y-0">
               <SheetTitle className="font-headline font-black text-2xl tracking-tight text-white">System Alerts</SheetTitle>
               <SheetDescription className="text-[10px] font-bold opacity-70 uppercase tracking-widest text-white/80">
