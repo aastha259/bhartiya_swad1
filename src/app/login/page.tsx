@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { useAuth as useFirebaseService, useFirestore } from '@/firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 
@@ -31,6 +31,21 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
 
   const callbackUrl = searchParams.get('callbackUrl');
+
+  // Ensure clean state and handle role-based redirection if user is already logged in
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        if (user.email === 'xyz@admin.com') {
+          router.push('/admin/dashboard');
+        } else {
+          const lastPage = localStorage.getItem('bhartiya_swad_last_page');
+          router.push(callbackUrl || lastPage || '/dashboard');
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, [auth, router, callbackUrl]);
 
   const handleLogin = async (role: 'user' | 'admin') => {
     if (!email || !email.trim()) {
@@ -120,7 +135,6 @@ function LoginForm() {
 
         toast.success("Welcome back!", { id: loginToast });
         
-        // Redirection Logic: callbackUrl > stored lastPage > /dashboard
         const lastPage = localStorage.getItem('bhartiya_swad_last_page');
         const redirectPath = callbackUrl || lastPage || '/dashboard';
         router.push(redirectPath);

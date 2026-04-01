@@ -10,7 +10,6 @@ import {
   Utensils,
   Loader2,
   Flame,
-  Search,
   Bell,
   User as UserIcon,
   Star,
@@ -28,7 +27,6 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { 
@@ -253,14 +251,6 @@ export default function DashboardPage() {
             </div>
             <span className="font-headline text-2xl font-black tracking-tight hidden md:block text-foreground">Bhartiya Swad</span>
           </Link>
-
-          <div className="flex-1 max-w-lg relative hidden sm:block group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-            <Input 
-              placeholder="Craving something specific?" 
-              className="pl-11 h-11 bg-muted/40 border-none rounded-2xl focus-visible:ring-primary/20 transition-all hover:bg-muted/60"
-            />
-          </div>
 
           <div className="flex items-center gap-4">
             <NotificationBell />

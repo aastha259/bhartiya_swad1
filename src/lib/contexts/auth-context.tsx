@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useUser, useAuth as useFirebaseAuth } from '@/firebase';
-import { browserLocalPersistence, setPersistence } from 'firebase/auth';
+import { browserLocalPersistence, setPersistence, signOut } from 'firebase/auth';
 import toast from 'react-hot-toast';
 
 type Role = 'user' | 'admin' | null;
@@ -69,7 +69,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
     }
     
-    // Crucial: Give a small buffer for state to propagate
     const timer = setTimeout(() => setInternalLoading(false), 100);
     return () => clearTimeout(timer);
   }, [firebaseUser, isUserLoading]);
@@ -84,10 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (timeout) clearTimeout(timeout);
       
       timeout = setTimeout(() => {
-        auth.signOut();
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('bhartiya_swad_admin');
-        }
+        handleLogoutAction();
         toast("Session expired due to inactivity. Please login again.", {
           icon: '⏳',
           duration: 5000
@@ -110,16 +106,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [firebaseUser, auth]);
 
-  const logout = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('bhartiya_swad_admin');
-      localStorage.removeItem('bhartiya_swad_last_page');
+  const handleLogoutAction = async () => {
+    try {
+      await signOut(auth);
+      if (typeof window !== 'undefined') {
+        localStorage.clear();
+        sessionStorage.clear();
+        // Force a full page reload to the login screen to ensure all React/Firebase state is wiped
+        window.location.href = "/login";
+      }
+    } catch (error) {
+      console.error("Logout Error:", error);
     }
-    auth.signOut();
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading: internalLoading, logout }}>
+    <AuthContext.Provider value={{ user, loading: internalLoading, logout: handleLogoutAction }}>
       {children}
     </AuthContext.Provider>
   );
