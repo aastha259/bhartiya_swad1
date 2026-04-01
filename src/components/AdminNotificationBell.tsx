@@ -13,7 +13,6 @@ import {
   SheetTitle,
   SheetDescription,
   SheetTrigger,
-  SheetClose,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -51,7 +50,8 @@ export default function AdminNotificationBell() {
     }
   }, []);
 
-  const toggleSound = () => {
+  const toggleSound = (e: React.MouseEvent) => {
+    e.stopPropagation();
     const newState = !soundEnabled;
     setSoundEnabled(newState);
     localStorage.setItem('bhartiya_swad_admin_notifications_sound', String(newState));
@@ -134,30 +134,31 @@ export default function AdminNotificationBell() {
         </Button>
       </SheetTrigger>
       <SheetContent className="w-full sm:max-w-[400px] p-0 border-l shadow-2xl flex flex-col rounded-l-[2.5rem]">
-        <div className="bg-primary p-8 text-white relative">
-          <div className="flex flex-col gap-1">
-            <SheetHeader className="text-left space-y-0">
-              <SheetTitle className="font-headline font-black text-2xl tracking-tight text-white">System Alerts</SheetTitle>
-              <SheetDescription className="text-[10px] font-bold opacity-70 uppercase tracking-widest text-white/80">
-                Real-time management dashboard
-              </SheetDescription>
-            </SheetHeader>
+        <div className="bg-primary p-8 text-white">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col gap-1">
+              <SheetHeader className="text-left space-y-0">
+                <SheetTitle className="font-headline font-black text-2xl tracking-tight text-white">System Alerts</SheetTitle>
+                <SheetDescription className="text-[10px] font-bold opacity-70 uppercase tracking-widest text-white/80">
+                  Real-time management dashboard
+                </SheetDescription>
+              </SheetHeader>
+            </div>
+            
+            <div className="flex items-center gap-2 pr-6">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={toggleSound}
+                className="text-white hover:bg-white/20 rounded-full h-10 w-10 shrink-0"
+              >
+                {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+              </Button>
+            </div>
           </div>
           
-          <div className="absolute bottom-6 left-8 right-8 flex justify-between items-center">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={toggleSound}
-              className="text-white hover:bg-white/20 rounded-xl px-3 gap-2"
-            >
-              {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-              <span className="text-[10px] font-black uppercase tracking-tighter">
-                {soundEnabled ? "On" : "Muted"}
-              </span>
-            </Button>
-
-            {unreadCount > 0 && (
+          {unreadCount > 0 && (
+            <div className="mt-6 flex justify-start">
               <Button 
                 variant="ghost" 
                 size="sm" 
@@ -166,8 +167,8 @@ export default function AdminNotificationBell() {
               >
                 Mark all as read
               </Button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
         
         <ScrollArea className="flex-1">
@@ -225,7 +226,6 @@ export default function AdminNotificationBell() {
           </div>
         </ScrollArea>
 
-        {/* Action Link Footer */}
         <div className="p-6 bg-muted/10 border-t border-dashed">
           <Link href="/admin/notifications" onClick={() => setOpen(false)}>
             <Button className="w-full h-12 rounded-2xl font-black bg-primary group hover:scale-[1.02] transition-all shadow-xl shadow-primary/10">

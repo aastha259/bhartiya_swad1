@@ -13,7 +13,6 @@ import {
   SheetTitle,
   SheetDescription,
   SheetTrigger,
-  SheetClose,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -52,7 +51,8 @@ export default function NotificationBell() {
     }
   }, []);
 
-  const toggleSound = () => {
+  const toggleSound = (e: React.MouseEvent) => {
+    e.stopPropagation();
     const newState = !soundEnabled;
     setSoundEnabled(newState);
     localStorage.setItem('bhartiya_swad_notifications_sound', String(newState));
@@ -62,7 +62,7 @@ export default function NotificationBell() {
     });
   };
 
-  // Client-side sorting to avoid the need for composite indexes
+  // Client-side sorting
   const notifications = useMemo(() => {
     if (!rawNotifications) return [];
     return [...rawNotifications].sort((a, b) => {
@@ -78,29 +78,24 @@ export default function NotificationBell() {
 
     const latest = notifications[0];
 
-    // Initialize the ID on first load without playing sound
     if (isFirstLoad.current) {
       lastProcessedId.current = latest.id;
       isFirstLoad.current = false;
       return;
     }
 
-    // If we have a new notification that hasn't been seen by this session
     if (latest.id !== lastProcessedId.current && !latest.read) {
       lastProcessedId.current = latest.id;
 
-      // Audio feedback
       if (soundEnabled) {
         const audio = new Audio('/sounds/ding.mp3');
         audio.play().catch(err => {
-          // Log only if it's not a standard interaction block
           if (err.name !== 'NotAllowedError') {
             console.warn("Notification audio failed:", err);
           }
         });
       }
 
-      // Haptic feedback (supported on some Android devices/browsers)
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
         navigator.vibrate(200);
       }
@@ -157,31 +152,32 @@ export default function NotificationBell() {
         className="w-full sm:max-w-[400px] p-0 border-l shadow-2xl flex flex-col rounded-l-[2.5rem]"
       >
         {/* Header Section */}
-        <div className="bg-primary p-8 text-white relative">
-          <div className="flex flex-col gap-1">
-            <SheetHeader className="text-left space-y-0">
-              <SheetTitle className="font-headline font-black text-2xl tracking-tight text-white">Notifications</SheetTitle>
-              <SheetDescription className="text-[10px] font-bold opacity-70 uppercase tracking-widest text-white/80">
-                Stay updated with your cravings
-              </SheetDescription>
-            </SheetHeader>
+        <div className="bg-primary p-8 text-white">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col gap-1">
+              <SheetHeader className="text-left space-y-0">
+                <SheetTitle className="font-headline font-black text-2xl tracking-tight text-white">Notifications</SheetTitle>
+                <SheetDescription className="text-[10px] font-bold opacity-70 uppercase tracking-widest text-white/80">
+                  Stay updated with your cravings
+                </SheetDescription>
+              </SheetHeader>
+            </div>
+            
+            <div className="flex items-center gap-2 pr-6">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={toggleSound}
+                className="text-white hover:bg-white/20 rounded-full h-10 w-10 shrink-0"
+                title={soundEnabled ? "Mute notification sounds" : "Unmute notification sounds"}
+              >
+                {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+              </Button>
+            </div>
           </div>
-          
-          <div className="absolute bottom-6 left-8 right-8 flex justify-between items-center">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={toggleSound}
-              className="text-white hover:bg-white/20 rounded-xl px-3 gap-2"
-              title={soundEnabled ? "Mute notification sounds" : "Unmute notification sounds"}
-            >
-              {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-              <span className="text-[10px] font-black uppercase tracking-tighter">
-                {soundEnabled ? "On" : "Muted"}
-              </span>
-            </Button>
 
-            {unreadCount > 0 && (
+          {unreadCount > 0 && (
+            <div className="mt-6 flex justify-start">
               <Button 
                 variant="ghost" 
                 size="sm" 
@@ -190,8 +186,8 @@ export default function NotificationBell() {
               >
                 Mark all as read
               </Button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
         
         {/* Notifications List */}
@@ -210,7 +206,6 @@ export default function NotificationBell() {
                     n.type === 'ai' && !n.read && "border-accent/30 bg-accent/[0.02]"
                   )}
                 >
-                  {/* Status Icon */}
                   <div className={cn(
                     "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner",
                     n.type === 'order' ? "bg-green-100 text-green-600" : 
@@ -222,7 +217,6 @@ export default function NotificationBell() {
                      <Info className="w-6 h-6" />}
                   </div>
 
-                  {/* Text Content */}
                   <div className="flex-1 space-y-1.5 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <p className={cn(
@@ -243,7 +237,6 @@ export default function NotificationBell() {
                     </div>
                   </div>
 
-                  {/* Unread Indicator */}
                   {!n.read && (
                     <div className="absolute top-5 right-5">
                       <div className={cn(
@@ -266,7 +259,6 @@ export default function NotificationBell() {
           </div>
         </ScrollArea>
 
-        {/* Footer / End of stream */}
         <div className="p-6 bg-muted/10 border-t border-dashed text-center">
           <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.3em] opacity-50">
             End of updates
